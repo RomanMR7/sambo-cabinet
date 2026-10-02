@@ -1,0 +1,7 @@
+services:
+  sambo-cabinet:
+    build: .
+    container_name: sambo-digital-cabinet
+    ports:
+      - "3000:80"
+    restart: unless-stopped
