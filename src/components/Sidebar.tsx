@@ -13,10 +13,16 @@ import {
   History,
   ShieldAlert,
   Settings,
-  HeartHandshake
+  HeartHandshake,
+  X
 } from 'lucide-react';
 
-export const Sidebar: React.FC = () => {
+interface Props {
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
+}
+
+export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
   const { role, activeNav, setActiveNav, documents } = useApp();
 
   // Pending docs count for verifier badge
@@ -78,84 +84,112 @@ export const Sidebar: React.FC = () => {
 
   const navItems = renderNavItems();
 
+  const handleSelectNav = (id: string) => {
+    setActiveNav(id);
+    onCloseMobile();
+  };
+
   return (
-    <aside className="w-64 bg-[#111827] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none min-h-[calc(100vh-45px)] no-print">
-      {/* Brand Header */}
-      <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-red-900/40">
-            ★
-          </div>
-          <div>
-            <div className="font-bold text-white text-base tracking-wide flex items-center gap-1.5">
-              <span>САМБО</span>
-              <span className="text-[10px] font-semibold bg-red-600/30 text-red-400 px-1.5 py-0.5 rounded border border-red-500/20">
-                PRO
-              </span>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div
+          onClick={onCloseMobile}
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 md:hidden animate-fadeIn transition-opacity"
+        />
+      )}
+
+      {/* Sidebar Drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 md:w-64 bg-[#111827] text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none transition-transform duration-300 ease-in-out md:static md:translate-x-0 no-print ${
+          mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`}
+      >
+        {/* Brand Header */}
+        <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-red-900/40">
+              ★
             </div>
-            <div className="text-[11px] text-slate-400">Цифровой кабинет</div>
-          </div>
-        </div>
-      </div>
-
-      {/* User Profile Block */}
-      <div className="p-4 mx-3 my-3 rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold text-sm shadow ring-2 ring-slate-700">
-          {currentProfile.initials}
-        </div>
-        <div className="overflow-hidden">
-          <div className="text-sm font-semibold text-white truncate" title={currentProfile.name}>
-            {currentProfile.name}
-          </div>
-          <div className="text-xs text-slate-400 truncate">{currentProfile.title}</div>
-          <div className="mt-1 inline-block text-[10px] font-medium bg-red-500/10 text-red-400 px-1.5 py-0.2 rounded border border-red-500/20">
-            {currentProfile.badge}
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation List */}
-      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-        <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-          Навигация
-        </div>
-        {navItems.map(item => {
-          const Icon = item.icon;
-          const isActive = activeNav === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveNav(item.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-red-600 text-white shadow-sm shadow-red-900/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-              </div>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className="px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-slate-950">
-                  {item.badge}
+            <div>
+              <div className="font-bold text-white text-base tracking-wide flex items-center gap-1.5">
+                <span>САМБО</span>
+                <span className="text-[10px] font-semibold bg-red-600/30 text-red-400 px-1.5 py-0.5 rounded border border-red-500/20">
+                  PRO
                 </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+              </div>
+              <div className="text-[11px] text-slate-400">Цифровой кабинет</div>
+            </div>
+          </div>
 
-      {/* Footer Info */}
-      <div className="p-4 border-t border-slate-800/80 text-xs text-slate-400">
-        <div className="flex items-center justify-between">
-          <span>Версия прототипа</span>
-          <span className="text-slate-300 font-mono">1.0.0</span>
+          {/* Close button on mobile */}
+          <button
+            onClick={onCloseMobile}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <div className="mt-1 text-[11px] text-slate-400">
-          Самбо: Группа 1 (2026/2027)
+
+        {/* User Profile Block */}
+        <div className="p-4 mx-3 my-3 rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold text-sm shadow ring-2 ring-slate-700 shrink-0">
+            {currentProfile.initials}
+          </div>
+          <div className="overflow-hidden">
+            <div className="text-sm font-semibold text-white truncate" title={currentProfile.name}>
+              {currentProfile.name}
+            </div>
+            <div className="text-xs text-slate-400 truncate">{currentProfile.title}</div>
+            <div className="mt-1 inline-block text-[10px] font-medium bg-red-500/10 text-red-400 px-1.5 py-0.2 rounded border border-red-500/20">
+              {currentProfile.badge}
+            </div>
+          </div>
         </div>
-      </div>
-    </aside>
+
+        {/* Navigation List */}
+        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+          <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            Навигация
+          </div>
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelectNav(item.id)}
+                className={`w-full flex items-center justify-between px-3.5 py-3 md:py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
+                  isActive
+                    ? 'bg-red-600 text-white shadow-sm shadow-red-900/30 font-bold'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-slate-950">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Footer Info */}
+        <div className="p-4 border-t border-slate-800/80 text-xs text-slate-400">
+          <div className="flex items-center justify-between">
+            <span>Версия</span>
+            <span className="text-slate-300 font-mono">1.0.0</span>
+          </div>
+          <div className="mt-1 text-[11px] text-slate-400">
+            Самбо: Группа 1 (2026/2027)
+          </div>
+        </div>
+      </aside>
+    </>
   );
 };

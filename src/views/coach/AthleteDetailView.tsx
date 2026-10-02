@@ -137,7 +137,7 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
         {/* Left 2 Cols: Tabs & Content */}
         <div className="lg:col-span-2 space-y-4">
           {/* Horizontal Tabs */}
-          <div className="bg-white rounded-xl border border-slate-200 p-1.5 flex items-center gap-1 overflow-x-auto shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-sm">
             {tabs.map(tab => (
               <button
                 key={tab.id}

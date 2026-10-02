@@ -144,7 +144,91 @@ export const ReportsView: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards (shown on phones) */}
+        <div className="sm:hidden divide-y divide-slate-100">
+          {reportRows.map(row => {
+            const isFirst = row.rankNumber === 1;
+            const isThird = row.rankNumber === 3;
+
+            return (
+              <div
+                key={row.athlete.id}
+                onClick={() => {
+                  setSelectedAthleteId(row.athlete.id);
+                  setActiveNav('athlete_detail');
+                }}
+                className="p-4 space-y-3 bg-white hover:bg-slate-50 transition cursor-pointer active:bg-slate-100"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 font-bold flex items-center justify-center shrink-0">
+                      {row.athlete.avatarInitials}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm">
+                        {row.athlete.shortName}
+                      </div>
+                      <div className="text-[11px] text-slate-400">{row.athlete.fullName}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    {row.statusBadge === 'ranked' && (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-extrabold text-[11px] shadow-sm ${
+                          isFirst
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : isThird
+                            ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                            : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                        }`}
+                      >
+                        <Trophy className={`w-3 h-3 ${isFirst ? 'text-amber-600' : 'text-slate-500'}`} />
+                        <span>{row.rankText}</span>
+                      </span>
+                    )}
+
+                    {row.statusBadge === 'blocked' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-800 border border-amber-200">
+                        <AlertCircle className="w-3 h-3 text-amber-600" />
+                        <span>Заблокировано</span>
+                      </span>
+                    )}
+
+                    {row.statusBadge === 'unranked' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] bg-slate-100 text-slate-600 border border-slate-200">
+                        <HelpCircle className="w-3 h-3 text-slate-400" />
+                        <span>Без места</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5 p-2 rounded-xl bg-slate-50 text-center text-xs">
+                  <div>
+                    <div className="text-[10px] text-slate-400">Доля</div>
+                    <div className="font-black text-slate-900 text-sm">{row.ratePercent}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">База E</div>
+                    <div className="font-bold text-slate-800">{row.effectiveBaseE}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-emerald-600 font-semibold">Посещений</div>
+                    <div className="font-bold text-emerald-700">{row.presentCount}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400">Пропусков</div>
+                    <div className="font-bold text-slate-700">{row.absentCount}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop View: Full Table (shown on tablet/desktop) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-100 text-slate-600 uppercase tracking-wider font-bold border-b border-slate-200">
               <tr>

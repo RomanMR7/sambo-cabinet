@@ -304,10 +304,10 @@ export const VerifierView: React.FC = () => {
               </div>
 
               {/* Action Buttons: Confirm / Needs Clarification (Slide 17) */}
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2">
                 <button
                   onClick={handleRemarks}
-                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 touch-manipulation"
                 >
                   <AlertTriangle className="w-4 h-4" />
                   <span>Требуется уточнение</span>
@@ -315,7 +315,7 @@ export const VerifierView: React.FC = () => {
 
                 <button
                   onClick={handleVerify}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-900/20 transition flex items-center gap-1.5"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-900/20 transition flex items-center justify-center gap-1.5 touch-manipulation"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Подтвердить проверку</span>

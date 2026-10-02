@@ -46,8 +46,8 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, onClose }) =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -70,17 +70,17 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, onClose }) =>
         </div>
 
         {/* Steps visual flow */}
-        <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[11px] font-semibold text-slate-500 overflow-x-auto">
-          <span className="text-red-600 font-bold">1. Наблюдение</span>
-          <span>→</span>
-          <span className="text-red-600 font-bold">2. Навык</span>
-          <span>→</span>
-          <span className="text-red-600 font-bold">3. Упражнение</span>
-          <span>→</span>
-          <span className="text-red-600 font-bold">4. Контроль</span>
+        <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[11px] font-semibold text-slate-500 overflow-x-auto no-scrollbar">
+          <span className="text-red-600 font-bold shrink-0">1. Наблюдение</span>
+          <span className="shrink-0">→</span>
+          <span className="text-red-600 font-bold shrink-0">2. Навык</span>
+          <span className="shrink-0">→</span>
+          <span className="text-red-600 font-bold shrink-0">3. Упражнение</span>
+          <span className="shrink-0">→</span>
+          <span className="text-red-600 font-bold shrink-0">4. Контроль</span>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Спортсмен
