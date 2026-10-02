@@ -33,6 +33,7 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
     sessions,
     tasks,
     weights,
+    competitions,
     setRole,
     setActiveNav
   } = useApp();
@@ -130,7 +131,11 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
             <Plus className="w-3.5 h-3.5" />
             <span>Наблюдение</span>
           </button>
-          <button className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+          <button
+            onClick={() => setIsEditAthleteOpen(true)}
+            title="Редактировать профиль"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+          >
             <MoreVertical className="w-4 h-4" />
           </button>
         </div>
@@ -277,13 +282,21 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
                   <div className="text-xs text-slate-600 mt-1">Телефон спортсмена: {athlete.athletePhone}</div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="text-xs font-bold text-slate-400 uppercase">Текущий вес</div>
-                  <div className="text-2xl font-black text-slate-900 mt-1">
-                    {weights[0]?.weightKg || 38.3} кг
-                  </div>
-                  <div className="text-xs text-slate-500">Контекст: {weights[0]?.context || 'Перед тренировкой'}</div>
-                </div>
+                {(() => {
+                  const athleteWeights = weights.filter(w => w.athleteId === athlete.id);
+                  const latestWeight = athleteWeights[0];
+                  return (
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="text-xs font-bold text-slate-400 uppercase">Текущий вес</div>
+                      <div className="text-2xl font-black text-slate-900 mt-1">
+                        {latestWeight ? `${latestWeight.weightKg} кг` : '—'}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        Контекст: {latestWeight?.context || 'Записей веса пока нет'}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -405,16 +418,48 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
           {activeTab === 'starts' && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
               <h3 className="font-extrabold text-slate-900 text-base">Соревнования и старты</h3>
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900">Первенство города по самбо</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                    24 октября 2026
-                  </span>
-                </div>
-                <div className="text-xs text-slate-600">Весовая категория: Юноши до 42 кг</div>
-                <div className="text-xs text-slate-500">Статус допуска: {athlete.admissionDecision.status === 'admitted' ? 'Допущен' : 'Ожидает решения'}</div>
-              </div>
+              {(() => {
+                const athleteCompetitions = competitions.filter(c =>
+                  c.participants.some(p => p.athleteId === athlete.id)
+                );
+                if (athleteCompetitions.length === 0) {
+                  return (
+                    <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                      Спортсмен пока не заявлен на предстоящие турниры.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {athleteCompetitions.map(comp => {
+                      const part = comp.participants.find(p => p.athleteId === athlete.id);
+                      const isAdmitted = part?.admissionDecision === 'admitted';
+                      return (
+                        <div key={comp.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900">{comp.title}</span>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                              {comp.date}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-600">
+                            Место: {comp.location} • Категория: <strong className="text-slate-800">{part?.category || 'Не указана'}</strong>
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center justify-between">
+                            <span>
+                              Статус допуска: {isAdmitted ? 'Допущен к схваткам' : 'Ожидает решения ответственного'}
+                            </span>
+                            {part?.nextGoal && (
+                              <span className="italic text-slate-400">Цель: {part.nextGoal}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -467,7 +512,11 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
 
             {/* Button-card «Запросить обновление полиса» */}
             <div
-              onClick={() => showNotification('Уведомление родителю (Ольге Кузнецовой) отправлено: «Требуется обновить страховой полис до 14 октября».')}
+              onClick={() => {
+                const insDoc = athleteDocs.find(d => d.type === 'insurance');
+                const expText = insDoc?.expiryDate ? ` (действует до ${insDoc.expiryDate})` : '';
+                showNotification(`Уведомление родителю (${athlete.parentName}) отправлено: «Требуется обновить страховой полис${expText}».`);
+              }}
               className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition cursor-pointer group flex items-start gap-3"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">

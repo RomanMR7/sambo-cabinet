@@ -110,7 +110,12 @@ export function calculateFourWeekAttendance(
     }
   });
 
-  return rows;
+  // 4. Return sorted list: ranked leaders first, followed by unranked and blocked
+  return [
+    ...rankable,
+    ...rows.filter(r => r.statusBadge === 'unranked'),
+    ...rows.filter(r => r.statusBadge === 'blocked')
+  ];
 }
 
 /**

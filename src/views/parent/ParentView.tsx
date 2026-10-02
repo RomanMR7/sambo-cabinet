@@ -25,13 +25,23 @@ export const ParentView: React.FC = () => {
 
   // Strict Data Isolation: Parent sees exclusively Anton K. ('ath-1')
   const child = athletes.find(a => a.id === 'ath-1') || athletes[0];
+
+  if (!child) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-slate-800">Данные спортсмена не найдены</h2>
+        <p className="text-sm text-slate-500">Пожалуйста, используйте кнопку «Сбросить демо-данные к исходным» в верхней панели.</p>
+      </div>
+    );
+  }
+
   const childDocs = documents.filter(d => d.athleteId === child.id);
   // Strictly filter only tasks published to family!
   const publishedTasks = tasks.filter(t => t.athleteId === child.id && t.publishedToFamily);
 
   // Next session
   const nextSession = sessions.find(s => s.id === 'ses-next') || sessions[sessions.length - 1];
-  const childNextAttendance = nextSession.attendance[child.id] || 'present';
+  const childNextAttendance = nextSession ? (nextSession.attendance[child.id] || 'present') : 'present';
 
   // 4-week rule attendance calculation for child
   const attendanceReport = calculateFourWeekAttendance(athletes, sessions);
@@ -441,70 +451,76 @@ export const ParentView: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {childDocs.map(doc => {
-              const expStatus = getDocumentExpiryStatus(doc.expiryDate);
-              const isUnverified = doc.verificationStatus === 'unverified';
-              const isVerified = doc.verificationStatus === 'verified';
-              const isExpiring = expStatus === 'expiring_soon';
+          {childDocs.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-xs">
+              Нет загруженных документов. Нажмите «Загрузить новый документ» выше.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {childDocs.map(doc => {
+                const expStatus = getDocumentExpiryStatus(doc.expiryDate);
+                const isUnverified = doc.verificationStatus === 'unverified';
+                const isVerified = doc.verificationStatus === 'verified';
+                const isExpiring = expStatus === 'expiring_soon';
 
-              return (
-                <div
-                  key={doc.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between space-y-4"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="font-bold text-sm text-slate-900">{doc.title}</div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                        v{doc.version}
-                      </span>
-                    </div>
+                return (
+                  <div
+                    key={doc.id}
+                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between space-y-4"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-bold text-sm text-slate-900">{doc.title}</div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                          v{doc.version}
+                        </span>
+                      </div>
 
-                    <div className="mt-2 space-y-1 text-xs text-slate-500">
-                      <div>Файл: <code className="font-mono text-slate-700">{doc.fileName}</code></div>
-                      <div>Дата передачи: {doc.uploadDate}</div>
-                      {doc.expiryDate && (
-                        <div className="font-semibold text-slate-800">Действует до: {doc.expiryDate}</div>
+                      <div className="mt-2 space-y-1 text-xs text-slate-500">
+                        <div>Файл: <code className="font-mono text-slate-700">{doc.fileName}</code></div>
+                        <div>Дата передачи: {doc.uploadDate}</div>
+                        {doc.expiryDate && (
+                          <div className="font-semibold text-slate-800">Действует до: {doc.expiryDate}</div>
+                        )}
+                      </div>
+
+                      {doc.verifierComment && (
+                        <div className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                          <span className="font-bold">Замечание: </span>{doc.verifierComment}
+                        </div>
                       )}
                     </div>
 
-                    {doc.verifierComment && (
-                      <div className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-                        <span className="font-bold">Замечание: </span>{doc.verifierComment}
-                      </div>
-                    )}
-                  </div>
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      {isUnverified && (
+                        <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                          На проверке контролёром
+                        </span>
+                      )}
+                      {isVerified && !isExpiring && (
+                        <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
+                          Проверено и одобрено
+                        </span>
+                      )}
+                      {isExpiring && (
+                        <span className="text-[11px] font-bold text-red-800 bg-red-100 px-2 py-0.5 rounded border border-red-200">
+                          Истекает срок действия
+                        </span>
+                      )}
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    {isUnverified && (
-                      <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
-                        На проверке контролёром
-                      </span>
-                    )}
-                    {isVerified && !isExpiring && (
-                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
-                        Проверено и одобрено
-                      </span>
-                    )}
-                    {isExpiring && (
-                      <span className="text-[11px] font-bold text-red-800 bg-red-100 px-2 py-0.5 rounded border border-red-200">
-                        Истекает срок действия
-                      </span>
-                    )}
-
-                    <button
-                      onClick={() => setPreviewDoc(doc)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center gap-1"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Открыть</span>
-                    </button>
+                      <button
+                        onClick={() => setPreviewDoc(doc)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Открыть</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

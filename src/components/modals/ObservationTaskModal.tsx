@@ -4,15 +4,16 @@ import { X, Award, CheckCircle } from 'lucide-react';
 
 interface Props {
   athleteId: string;
+  initialSkillId?: string;
   onClose: () => void;
 }
 
-export const ObservationTaskModal: React.FC<Props> = ({ athleteId, onClose }) => {
+export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillId, onClose }) => {
   const { athletes, skills, addObservationTask } = useApp();
 
   const [selectedAthleteId, setSelectedAthleteId] = useState(athleteId);
   const [observation, setObservation] = useState('При входе в захват теряет устойчивость опорной ноги');
-  const [selectedSkillId, setSelectedSkillId] = useState(skills[0]?.id || 'sk-1');
+  const [selectedSkillId, setSelectedSkillId] = useState(initialSkillId || skills[0]?.id || 'sk-1');
   const selectedSkill = skills.find(s => s.id === selectedSkillId);
   const [exerciseTitle, setExerciseTitle] = useState(selectedSkill?.recommendedExercise || '');
   const [deadline, setDeadline] = useState('2026-10-12');

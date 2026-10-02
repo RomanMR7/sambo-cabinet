@@ -18,11 +18,22 @@ export const AthleteView: React.FC = () => {
 
   // Anton K. ('ath-1')
   const me = athletes.find(a => a.id === 'ath-1') || athletes[0];
+
+  if (!me) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-slate-800">Данные спортсмена не найдены</h2>
+        <p className="text-sm text-slate-500">Пожалуйста, используйте кнопку «Сбросить демо-данные к исходным» в верхней панели.</p>
+      </div>
+    );
+  }
+
   const myTasks = tasks.filter(t => t.athleteId === me.id && t.publishedToFamily);
   const activeTask = myTasks.find(t => t.status === 'active') || myTasks[0];
   const completedTask = myTasks.find(t => t.status === 'completed');
 
   const nextSession = sessions.find(s => s.id === 'ses-next') || sessions[sessions.length - 1];
+  const upcomingCompetition = competitions[0];
 
   const [activeModalText, setActiveModalText] = useState<{ title: string; content: string } | null>(null);
   const [taskFeedbackToast, setTaskFeedbackToast] = useState<string | null>(null);
@@ -164,26 +175,36 @@ export const AthleteView: React.FC = () => {
                 <h2 className="font-extrabold text-slate-900 text-base">Следующее занятие</h2>
               </div>
               <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
-                {nextSession.date}
+                {nextSession ? nextSession.date : 'Нет даты'}
               </span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 text-sm">{nextSession.topic}</span>
-                <span className="font-mono text-xs font-bold text-slate-700">{nextSession.timeRange}</span>
+            {nextSession ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 text-sm">{nextSession.topic}</span>
+                  <span className="font-mono text-xs font-bold text-slate-700">{nextSession.timeRange}</span>
+                </div>
+                <div className="text-xs text-slate-500">
+                  Место: Зал самбо №1 • Форма: красная самбовка / синяя самбовка
+                </div>
               </div>
-              <div className="text-xs text-slate-500">
-                Место: Зал самбо №1 • Форма: красная самбовка / синяя самбовка
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-50 text-xs text-slate-400 text-center">
+                Нет запланированных тренировок
               </div>
-            </div>
+            )}
 
             <button
-              onClick={() => setActiveModalText({
-                title: 'План следующей тренировки',
-                content: `Дата: ${nextSession.date} (${nextSession.timeRange})\nТема: ${nextSession.topic}\n\n1. Разминка и акробатика на ковре\n2. Отработка захватов и выведения из равновесия\n3. Учебно-тренировочные схватки по заданию тренера\n4. Заминка и растяжка`
-              })}
-              className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center justify-center gap-2"
+              disabled={!nextSession}
+              onClick={() => {
+                if (!nextSession) return;
+                setActiveModalText({
+                  title: 'План следующей тренировки',
+                  content: `Дата: ${nextSession.date} (${nextSession.timeRange})\nТема: ${nextSession.topic}\n\n1. Разминка и акробатика на ковре\n2. Отработка захватов и выведения из равновесия\n3. Учебно-тренировочные схватки по заданию тренера\n4. Заминка и растяжка`
+                });
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center justify-center gap-2"
             >
               <span>Открыть план занятия</span>
               <ChevronRight className="w-4 h-4" />
@@ -211,8 +232,12 @@ export const AthleteView: React.FC = () => {
                   <span className="font-bold text-sm text-slate-900">
                     «{activeTask.exerciseTitle}»
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                    В процессе
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    activeTask.status === 'completed'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : 'bg-amber-100 text-amber-800 border-amber-200'
+                  }`}>
+                    {activeTask.status === 'completed' ? 'Выполнено' : 'В процессе'}
                   </span>
                 </div>
                 <div className="text-xs text-slate-600">
@@ -270,24 +295,30 @@ export const AthleteView: React.FC = () => {
                 <h2 className="font-extrabold text-slate-900 text-base">Ближайший старт</h2>
               </div>
               <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                24 октября 2026
+                {upcomingCompetition?.date || '24 октября 2026'}
               </span>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="font-bold text-slate-900 text-sm">Первенство города по самбо</div>
-              <div className="text-xs text-slate-600">Категория: Юноши до 42 кг</div>
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <span className="text-slate-500">Статус допуска:</span>
-                <span className={`font-bold px-2 py-0.5 rounded ${
-                  me.admissionDecision.status === 'admitted'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {me.admissionDecision.status === 'admitted' ? 'Допущен тренером' : 'Ожидает решения'}
-                </span>
+            {upcomingCompetition ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="font-bold text-slate-900 text-sm">{upcomingCompetition.title}</div>
+                <div className="text-xs text-slate-600">Место: {upcomingCompetition.location}</div>
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <span className="text-slate-500">Статус допуска:</span>
+                  <span className={`font-bold px-2 py-0.5 rounded ${
+                    me.admissionDecision.status === 'admitted'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {me.admissionDecision.status === 'admitted' ? 'Допущен тренером' : 'Ожидает решения'}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-50 text-xs text-slate-400 text-center">
+                Нет запланированных стартов
+              </div>
+            )}
           </div>
         </div>
       )}

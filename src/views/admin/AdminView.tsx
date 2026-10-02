@@ -11,20 +11,16 @@ import {
   Plus
 } from 'lucide-react';
 import { EditGroupModal } from '../../components/modals/EditGroupModal';
+import { EditScheduleSlotModal } from '../../components/modals/EditScheduleSlotModal';
+import { ScheduleSlot } from '../../types';
 
 export const AdminView: React.FC = () => {
-  const { groupInfo, activeNav, setActiveNav } = useApp();
+  const { groupInfo, scheduleSlots, activeNav, setActiveNav } = useApp();
 
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+  const [editingSlot, setEditingSlot] = useState<ScheduleSlot | null | undefined>(undefined);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  // State for Schedule Editor in admin_schedule
-  const [scheduleDays, setScheduleDays] = useState([
-    { day: 'Вторник', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
-    { day: 'Четверг', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
-    { day: 'Суббота', time: '10:00–11:30', hall: 'Зал самбо №2', coach: 'Иванов А. В.', group: 'Группа 1 (ОФП)' },
-  ]);
 
   const navTab = activeNav.startsWith('admin_') ? activeNav : 'admin_main';
 
@@ -270,13 +266,7 @@ export const AdminView: React.FC = () => {
             </div>
 
             <button
-              onClick={() => {
-                setScheduleDays(prev => [
-                  ...prev,
-                  { day: 'Пятница', time: '17:30–18:30', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' }
-                ]);
-                showToast('Добавлена новая тренировка в расписание!');
-              }}
+              onClick={() => setEditingSlot(null)}
               className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
@@ -285,8 +275,8 @@ export const AdminView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {scheduleDays.map((item, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+            {scheduleSlots.map(item => (
+              <div key={item.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-black text-slate-900 text-base">{item.day}</span>
                   <span className="text-xs font-mono font-bold bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">
@@ -305,7 +295,7 @@ export const AdminView: React.FC = () => {
                     Утверждено
                   </span>
                   <button
-                    onClick={() => showToast(`Слот расписания (${item.day}) открыт для редактирования`)}
+                    onClick={() => setEditingSlot(item)}
                     className="text-xs font-bold text-red-600 hover:underline"
                   >
                     Изменить
@@ -420,6 +410,15 @@ export const AdminView: React.FC = () => {
         <EditGroupModal
           onClose={() => setIsEditGroupOpen(false)}
           onSaved={() => showToast('Параметры группы успешно сохранены!')}
+        />
+      )}
+
+      {/* Edit Schedule Slot Modal */}
+      {editingSlot !== undefined && (
+        <EditScheduleSlotModal
+          slot={editingSlot}
+          onClose={() => setEditingSlot(undefined)}
+          onSaved={() => showToast('Расписание успешно обновлено!')}
         />
       )}
     </div>

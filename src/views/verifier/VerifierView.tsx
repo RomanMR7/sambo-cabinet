@@ -48,6 +48,10 @@ export const VerifierView: React.FC = () => {
     setSuccessToast(`Документ «${selectedDoc.title}» (${selectedAthlete?.shortName}) успешно подтверждён!`);
     setVerifierComment('');
     setWarningMsg(null);
+    const nextDoc = queueDocs.find(d => d.id !== selectedDoc.id);
+    if (nextDoc) {
+      setSelectedDocId(nextDoc.id);
+    }
     setTimeout(() => setSuccessToast(null), 3500);
   };
 
@@ -60,6 +64,10 @@ export const VerifierView: React.FC = () => {
     verifyDocument(selectedDoc.id, 'has_remarks', verifierComment);
     setSuccessToast(`Замечание к документу «${selectedDoc.title}» зафиксировано.`);
     setWarningMsg(null);
+    const nextDoc = queueDocs.find(d => d.id !== selectedDoc.id);
+    if (nextDoc) {
+      setSelectedDocId(nextDoc.id);
+    }
     setTimeout(() => setSuccessToast(null), 3500);
   };
 
@@ -330,22 +338,37 @@ export const VerifierView: React.FC = () => {
               </div>
 
               {/* Action Buttons: Confirm / Needs Clarification (Slide 17) */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2">
-                <button
-                  onClick={handleRemarks}
-                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 touch-manipulation"
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>Требуется уточнение</span>
-                </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2">
+                <div className="flex items-center gap-2">
+                  {selectedDoc.verificationStatus === 'verified' && (
+                    <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Документ проверен и подтверждён
+                    </span>
+                  )}
+                  {selectedDoc.verificationStatus === 'has_remarks' && (
+                    <span className="text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-red-600" /> Зафиксировано замечание
+                    </span>
+                  )}
+                </div>
 
-                <button
-                  onClick={handleVerify}
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-900/20 transition flex items-center justify-center gap-1.5 touch-manipulation"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Подтвердить проверку</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleRemarks}
+                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 touch-manipulation"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>{selectedDoc.verificationStatus === 'has_remarks' ? 'Обновить замечание' : 'Требуется уточнение'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleVerify}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-900/20 transition flex items-center justify-center gap-1.5 touch-manipulation"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{selectedDoc.verificationStatus === 'verified' ? 'Подтверждено повторно' : 'Подтвердить проверку'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Lower Informational Block (Slide 17) */}

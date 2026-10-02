@@ -301,7 +301,7 @@ export const SessionView: React.FC = () => {
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
                 <div>Зал: <strong>Самбо №1</strong></div>
                 <div>Тренер: <strong>Иванов А. В.</strong></div>
-                <div>Количество явившихся: <strong>{Object.values(currentSession.attendance).filter(v => v === 'present').length}</strong> из 5</div>
+                <div>Количество явившихся: <strong>{Object.values(currentSession.attendance).filter(v => v === 'present').length}</strong> из {athletes.length}</div>
               </div>
             </div>
           )}
@@ -350,18 +350,12 @@ export const SessionView: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">1. Разминка</span>
-                <span className="font-mono text-slate-500">18:00–18:15</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">2. Техника</span>
-                <span className="font-mono text-slate-500">18:15–18:40</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">3. Учебные схватки</span>
-                <span className="font-mono text-slate-500">18:40–19:00</span>
-              </div>
+              {currentSession.plan.map(p => (
+                <div key={p.order} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">{p.order}. {p.title}</span>
+                  <span className="font-mono text-slate-500">{p.timeRange}</span>
+                </div>
+              ))}
             </div>
 
             <button

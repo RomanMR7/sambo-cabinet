@@ -29,6 +29,7 @@ export const DevelopmentView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'s3' | 'catalog' | 'tasks' | 'weights' | 'video'>('s3');
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
+  const [modalSkillId, setModalSkillId] = useState<string | undefined>(undefined);
 
   // Form states for Weight
   const [weightAthleteId, setWeightAthleteId] = useState('ath-1');
@@ -89,7 +90,10 @@ export const DevelopmentView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsObsModalOpen(true)}
+          onClick={() => {
+            setModalSkillId(undefined);
+            setIsObsModalOpen(true);
+          }}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -305,7 +309,10 @@ export const DevelopmentView: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => setIsObsModalOpen(true)}
+                  onClick={() => {
+                    setModalSkillId(skill.id);
+                    setIsObsModalOpen(true);
+                  }}
                   className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
                 >
                   <span>Назначить спортсмену</span>
@@ -610,8 +617,12 @@ export const DevelopmentView: React.FC = () => {
 
       {isObsModalOpen && (
         <ObservationTaskModal
-          athleteId="ath-1"
-          onClose={() => setIsObsModalOpen(false)}
+          athleteId={athletes[0]?.id || 'ath-1'}
+          initialSkillId={modalSkillId}
+          onClose={() => {
+            setIsObsModalOpen(false);
+            setModalSkillId(undefined);
+          }}
         />
       )}
     </div>

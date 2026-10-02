@@ -11,7 +11,8 @@ interface Props {
 
 export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 'medical', onClose }) => {
   const { uploadDocument, athletes } = useApp();
-  const athlete = athletes.find(a => a.id === athleteId);
+  const [selectedAthleteId, setSelectedAthleteId] = useState(athleteId);
+  const currentAthlete = athletes.find(a => a.id === selectedAthleteId) || athletes[0];
 
   const [docType, setDocType] = useState<DocType>(defaultType);
   const [title, setTitle] = useState(
@@ -46,9 +47,9 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalFileName = fileName || `${docType === 'medical' ? 'Мед_справка' : docType === 'insurance' ? 'Полис' : 'Согласие'}_${athlete?.shortName.replace(/[\s.]+/g, '_') || 'спортсмен'}.pdf`;
+    const finalFileName = fileName || `${docType === 'medical' ? 'Мед_справка' : docType === 'insurance' ? 'Полис' : 'Согласие'}_${currentAthlete?.shortName.replace(/[\s.]+/g, '_') || 'спортсмен'}.pdf`;
 
-    uploadDocument(athleteId, {
+    uploadDocument(selectedAthleteId, {
       type: docType,
       title: title || 'Новый документ',
       fileName: finalFileName,
@@ -70,7 +71,7 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
             <div>
               <h3 className="font-bold text-base">Загрузить документ</h3>
               <p className="text-xs text-slate-300">
-                Спортсмен: {athlete?.fullName || athlete?.shortName}
+                Спортсмен: {currentAthlete?.fullName || currentAthlete?.shortName}
               </p>
             </div>
           </div>
@@ -92,6 +93,23 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
               Загрузка новой копии или изменение даты создаёт новую версию документа и автоматически переводит статус в 
               <span className="font-semibold text-amber-700"> «На проверке»</span> для контролёра.
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Спортсмен
+            </label>
+            <select
+              value={selectedAthleteId}
+              onChange={e => setSelectedAthleteId(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-medium bg-white"
+            >
+              {athletes.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.shortName} ({a.fullName})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

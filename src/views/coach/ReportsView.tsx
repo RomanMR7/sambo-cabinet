@@ -39,16 +39,18 @@ export const ReportsView: React.FC = () => {
       r.unmarkedCount,
       `${r.ratePercent}%`,
       `"${r.rankText}"`
-    ].join(','));
+    ].join(';'));
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...csvLines].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers.join(';'), ...csvLines].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `Отчет_посещаемости_самбо_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handlePrint = () => {
@@ -346,7 +348,7 @@ export const ReportsView: React.FC = () => {
 
         {/* Footer Notes (Slide 12) */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
-          <span>* Антон К. и Лиза А. имеют 100% и делят 1 место. Следующий (Максим В.) занимает 3 место согласно спортивному регламенту.</span>
+          <span>* При равной доле посещений спортсмены делят призовое место (например, 1, 1, 3... место) согласно спортивному регламенту. Неотмеченные занятия блокируют расчет до заполнения.</span>
           <span className="font-bold text-slate-700">Группа начальной подготовки №1 • Тренер: Иванов А. В.</span>
         </div>
       </div>

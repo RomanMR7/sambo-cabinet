@@ -108,6 +108,7 @@ export interface Competition {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   location: string;
   requiredDocuments: DocType[];
   participants: Array<{
@@ -126,6 +127,7 @@ export interface Athlete {
   groupId: string;
   avatarInitials: string;
   isActive: boolean;
+  birthDate?: string;
   admissionDecision: AdmissionDecision;
   parentName: string;
   parentPhone: string;
@@ -138,4 +140,13 @@ export interface GroupInfo {
   coachName: string;
   schedule: string;
   athleteCount: number;
+}
+
+export interface ScheduleSlot {
+  id: string;
+  day: string;
+  time: string;
+  hall: string;
+  coach: string;
+  group: string;
 }

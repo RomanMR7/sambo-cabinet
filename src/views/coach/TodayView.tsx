@@ -13,9 +13,10 @@ import {
   Flame,
   ChevronRight
 } from 'lucide-react';
+import { getDocumentExpiryStatus } from '../../utils/rules';
 
 export const TodayView: React.FC = () => {
-  const { setActiveNav, setSelectedAthleteId, setSelectedSessionId, tasks, documents } = useApp();
+  const { setActiveNav, setSelectedAthleteId, setSelectedSessionId, tasks, documents, athletes } = useApp();
 
   const handleOpenAthleteDocs = (athleteId: string) => {
     setSelectedAthleteId(athleteId);
@@ -29,6 +30,16 @@ export const TodayView: React.FC = () => {
 
   // Calculations for metric badges
   const pendingDocsCount = documents.filter(d => d.verificationStatus === 'unverified').length;
+  const activeTasksCount = tasks.filter(t => t.status === 'active' || t.status === 'needs_review').length;
+
+  // Dynamic items needing attention
+  const expiringDocs = documents.filter(d => {
+    const s = getDocumentExpiryStatus(d.expiryDate);
+    return s === 'expiring_soon' || s === 'expired';
+  });
+  const unverifiedDocs = documents.filter(d => d.verificationStatus === 'unverified');
+  const activeTasks = tasks.filter(t => t.status === 'active');
+  const totalAttentionCount = expiringDocs.length + unverifiedDocs.length + activeTasks.length;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -73,7 +84,7 @@ export const TodayView: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-extrabold text-slate-900">24 спортсмена</div>
+            <div className="text-2xl font-extrabold text-slate-900">{athletes.length} спортсменов</div>
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-1 group-hover:text-red-600">
               <span>Перейти в список</span>
               <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
@@ -113,7 +124,7 @@ export const TodayView: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-extrabold text-slate-900">3 задачи к проверке</div>
+            <div className="text-2xl font-extrabold text-slate-900">{activeTasksCount} в работе</div>
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-1 group-hover:text-red-600">
               <span>Раздел Развитие и S/3S</span>
               <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
@@ -183,82 +194,109 @@ export const TodayView: React.FC = () => {
               <h3 className="font-extrabold text-slate-900 text-base">Требует внимания</h3>
             </div>
             <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-              3 события
+              {totalAttentionCount} {totalAttentionCount === 1 ? 'событие' : totalAttentionCount < 5 ? 'события' : 'событий'}
             </span>
           </div>
 
           <div className="space-y-3">
-            {/* Item 1 */}
-            <div
-              onClick={() => handleOpenAthleteDocs('ath-1')}
-              className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition cursor-pointer flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
-                  АК
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <span>Полис: скоро истекает</span>
-                    <span className="text-xs font-semibold px-2 py-0.2 rounded bg-amber-200 text-amber-800">
-                      до 14 окт
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    Антон К. • Требуется запросить продление у родителя
-                  </div>
-                </div>
+            {totalAttentionCount === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-500">
+                Все документы актуальны и задачи закрыты.
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
+            ) : (
+              <>
+                {/* Expiring Docs */}
+                {expiringDocs.slice(0, 2).map(doc => {
+                  const ath = athletes.find(a => a.id === doc.athleteId);
+                  const isExpired = getDocumentExpiryStatus(doc.expiryDate) === 'expired';
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => handleOpenAthleteDocs(doc.athleteId)}
+                      className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition cursor-pointer flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+                          {ath?.avatarInitials || 'СП'}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <span>{doc.title}: {isExpired ? 'истёк' : 'скоро истекает'}</span>
+                            <span className="text-xs font-semibold px-2 py-0.2 rounded bg-amber-200 text-amber-800">
+                              до {doc.expiryDate}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {ath?.shortName} • Требуется запросить продление у родителя
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                    </div>
+                  );
+                })}
 
-            {/* Item 2 */}
-            <div
-              onClick={() => handleOpenAthleteDocs('ath-1')}
-              className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 transition cursor-pointer flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                  АК
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <span>Медицинский документ: на проверке</span>
-                    <span className="text-xs font-semibold px-2 py-0.2 rounded bg-blue-200 text-blue-800">
-                      Версия 1
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    Антон К. • Ожидает подтверждения службы верификации
-                  </div>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
+                {/* Unverified Docs */}
+                {unverifiedDocs.slice(0, 2).map(doc => {
+                  const ath = athletes.find(a => a.id === doc.athleteId);
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => handleOpenAthleteDocs(doc.athleteId)}
+                      className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 transition cursor-pointer flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                          {ath?.avatarInitials || 'СП'}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <span>{doc.title}: на проверке</span>
+                            <span className="text-xs font-semibold px-2 py-0.2 rounded bg-blue-200 text-blue-800">
+                              Версия {doc.version}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {ath?.shortName} • Ожидает подтверждения службы верификации
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                    </div>
+                  );
+                })}
 
-            {/* Item 3 */}
-            <div
-              onClick={() => handleOpenAthleteDocs('ath-2')}
-              className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition cursor-pointer flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs">
-                  ЛА
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <span>Индивидуальная задача: срок контроля</span>
-                    <span className="text-xs font-semibold px-2 py-0.2 rounded bg-slate-200 text-slate-700">
-                      9 окт
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    Лиза А. • Плотность захвата двумя руками
-                  </div>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </div>
+                {/* Active Tasks */}
+                {activeTasks.slice(0, 2).map(t => {
+                  const ath = athletes.find(a => a.id === t.athleteId);
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => handleOpenAthleteDocs(t.athleteId)}
+                      className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition cursor-pointer flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs">
+                          {ath?.avatarInitials || 'СП'}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <span>Задача: {t.exerciseTitle}</span>
+                            <span className="text-xs font-semibold px-2 py-0.2 rounded bg-slate-200 text-slate-700">
+                              до {t.deadline}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {ath?.shortName} • {t.skillTitle}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         </div>
 
@@ -278,34 +316,36 @@ export const TodayView: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {tasks.map(t => (
-              <div
-                key={t.id}
-                className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition flex items-start justify-between gap-3"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs mt-0.5">
-                    {t.athleteId === 'ath-1' ? 'АК' : t.athleteId === 'ath-2' ? 'ЛА' : 'СП'}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900">
-                      {t.athleteId === 'ath-1' ? 'Антон К.' : 'Лиза А.'} — «{t.exerciseTitle}»
+            {tasks.map(t => {
+              const ath = athletes.find(a => a.id === t.athleteId);
+              return (
+                <div
+                  key={t.id}
+                  className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition flex items-start justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs mt-0.5">
+                      {ath?.avatarInitials || 'СП'}
                     </div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      Навык: <span className="font-semibold text-slate-700">{t.skillTitle}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        Контроль: {t.deadline}
-                      </span>
-                      {t.publishedToFamily && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Доступно семье
+                    <div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {ath?.shortName || 'Спортсмен'} — «{t.exerciseTitle}»
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        Навык: <span className="font-semibold text-slate-700">{t.skillTitle}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          Контроль: {t.deadline}
                         </span>
-                      )}
+                        {t.publishedToFamily && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Доступно семье
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
                 <div className="shrink-0">
                   {t.status === 'completed' ? (
@@ -319,7 +359,8 @@ export const TodayView: React.FC = () => {
                   )}
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         </div>
       </div>

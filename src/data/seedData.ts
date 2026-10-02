@@ -8,7 +8,8 @@ import {
   WeightRecord,
   VideoNote,
   Competition,
-  GroupInfo
+  GroupInfo,
+  ScheduleSlot
 } from '../types';
 
 export const initialAthletes: Athlete[] = [
@@ -19,6 +20,7 @@ export const initialAthletes: Athlete[] = [
     groupId: 'grp-1',
     avatarInitials: 'АК',
     isActive: true,
+    birthDate: '2014-05-12',
     admissionDecision: {
       status: 'pending',
       basis: 'Ожидает повторного медицинского допуска',
@@ -37,6 +39,7 @@ export const initialAthletes: Athlete[] = [
     groupId: 'grp-1',
     avatarInitials: 'ЛА',
     isActive: true,
+    birthDate: '2015-08-20',
     admissionDecision: {
       status: 'admitted',
       basis: 'Диспансеризация пройдена',
@@ -55,6 +58,7 @@ export const initialAthletes: Athlete[] = [
     groupId: 'grp-1',
     avatarInitials: 'НС',
     isActive: true,
+    birthDate: '2014-02-14',
     admissionDecision: {
       status: 'admitted',
       basis: 'Полный пакет документов',
@@ -73,6 +77,7 @@ export const initialAthletes: Athlete[] = [
     groupId: 'grp-1',
     avatarInitials: 'МВ',
     isActive: true,
+    birthDate: '2013-11-03',
     admissionDecision: {
       status: 'admitted',
       basis: 'Допущен',
@@ -91,6 +96,7 @@ export const initialAthletes: Athlete[] = [
     groupId: 'grp-1',
     avatarInitials: 'ДН',
     isActive: true,
+    birthDate: '2015-03-27',
     admissionDecision: {
       status: 'pending',
       basis: 'Не сдано согласие',
@@ -503,6 +509,7 @@ export const initialCompetitions: Competition[] = [
     id: 'cmp-1',
     title: 'Первенство города по самбо среди юношей',
     date: '2026-10-24',
+    endDate: '2026-10-25',
     location: 'Дворец спорта «Самбо-70», Москва',
     requiredDocuments: ['medical', 'insurance', 'consent'],
     participants: [
@@ -535,3 +542,9 @@ export const initialGroupInfo: GroupInfo = {
   schedule: 'Вт, Чт 18:00–19:00',
   athleteCount: 24
 };
+
+export const initialScheduleSlots: ScheduleSlot[] = [
+  { id: 'sch-1', day: 'Вторник', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
+  { id: 'sch-2', day: 'Четверг', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
+  { id: 'sch-3', day: 'Суббота', time: '10:00–11:30', hall: 'Зал самбо №2', coach: 'Иванов А. В.', group: 'Группа 1 (ОФП)' },
+];

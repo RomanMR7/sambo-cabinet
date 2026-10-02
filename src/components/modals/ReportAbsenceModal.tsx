@@ -10,7 +10,8 @@ interface Props {
 
 export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onClose }) => {
   const { reportAbsence, sessions } = useApp();
-  const session = sessions.find(s => s.id === sessionId);
+  const [selectedSessionId, setSelectedSessionId] = useState(sessionId);
+  const session = sessions.find(s => s.id === selectedSessionId) || sessions[0];
 
   const [reasonCategory, setReasonCategory] = useState<'illness' | 'family' | 'custom'>('illness');
   const [comment, setComment] = useState('');
@@ -27,7 +28,7 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
       fullReason = comment || 'Уважительная причина по согласованию';
     }
 
-    reportAbsence(athleteId, sessionId, fullReason);
+    reportAbsence(athleteId, selectedSessionId, fullReason);
     onClose();
   };
 
@@ -63,6 +64,23 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
               <span className="font-bold">Математический расчет (Правило 4 недель): </span>
               Согласованный уважительный пропуск автоматически исключается из эффективной базы <span className="font-mono font-bold">E</span>, не ухудшая спортивный процент посещаемости ребёнка.
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Выберите занятие для пропуска
+            </label>
+            <select
+              value={selectedSessionId}
+              onChange={e => setSelectedSessionId(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            >
+              {sessions.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.date} ({s.timeRange}) — {s.topic}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

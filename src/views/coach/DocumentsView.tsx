@@ -12,7 +12,7 @@ import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 import { UploadDocumentModal } from '../../components/modals/UploadDocumentModal';
 
 export const DocumentsView: React.FC = () => {
-  const { documents, athletes, setSelectedAthleteId, setActiveNav } = useApp();
+  const { documents, athletes, selectedAthleteId, setSelectedAthleteId, setActiveNav } = useApp();
   const [filterType, setFilterType] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
@@ -49,7 +49,7 @@ export const DocumentsView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setUploadAthleteId('ath-1')}
+          onClick={() => setUploadAthleteId(selectedAthleteId || athletes[0]?.id || 'ath-1')}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" />
