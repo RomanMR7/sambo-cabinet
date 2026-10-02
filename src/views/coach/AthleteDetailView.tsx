@@ -38,8 +38,8 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
     setActiveNav
   } = useApp();
 
-  const athlete = athletes.find(a => a.id === selectedAthleteId) || athletes[0];
-  const athleteDocs = documents.filter(d => d.athleteId === athlete.id);
+  const athlete = athletes.find(a => a && a.id === selectedAthleteId) || athletes[0];
+  const athleteDocs = athlete ? documents.filter(d => d.athleteId === athlete.id) : [];
 
   // Default tab: 'documents' as requested in prompt:
   // "Горизонтальные табы: Обзор, Развитие, Посещения, Тесты, Старты, Документы (активный по умолчанию для демо), История."
@@ -70,6 +70,21 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
     { id: 'documents', label: 'Документы' },
     { id: 'history', label: 'История' },
   ];
+
+  if (!athlete) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
+        <h2 className="text-xl font-bold text-slate-800">Спортсмен не найден</h2>
+        <p className="text-sm text-slate-500">В списке группы нет данных о выбранном спортсмене.</p>
+        <button
+          onClick={() => (onBack ? onBack() : setActiveNav('athletes'))}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl"
+        >
+          Вернуться к списку группы
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -315,29 +330,35 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div className="space-y-3">
-                {tasks.filter(t => t.athleteId === athlete.id).map(t => (
-                  <div key={t.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-sm">{t.exerciseTitle}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                        t.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {t.status === 'completed' ? 'Зачтено' : 'В работе'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      <span className="font-semibold">Наблюдение тренера: </span> {t.observation}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      Срок контроля: {t.deadline} • Навык: {t.skillTitle}
-                    </div>
-                    {t.coachFeedback && (
-                      <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
-                        <span className="font-bold">Отзыв тренера: </span> {t.coachFeedback}
-                      </div>
-                    )}
+                {tasks.filter(t => t.athleteId === athlete.id).length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                    Индивидуальные задачи отсутствуют.
                   </div>
-                ))}
+                ) : (
+                  tasks.filter(t => t.athleteId === athlete.id).map(t => (
+                    <div key={t.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-sm">{t.exerciseTitle}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                          t.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {t.status === 'completed' ? 'Зачтено' : 'В работе'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-600">
+                        <span className="font-semibold">Наблюдение тренера: </span> {t.observation}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        Срок контроля: {t.deadline} • Навык: {t.skillTitle}
+                      </div>
+                      {t.coachFeedback && (
+                        <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
+                          <span className="font-bold">Отзыв тренера: </span> {t.coachFeedback}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -347,34 +368,40 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
               <h3 className="font-extrabold text-slate-900 text-base">История посещаемости (4 недели)</h3>
               <div className="space-y-2">
-                {sessions.map(s => {
-                  const status = s.attendance[athlete.id] || 'unmarked';
-                  return (
-                    <div key={s.id} className="p-3 rounded-xl border border-slate-200 flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-bold text-slate-900">{s.date} • {s.topic}</div>
-                        <div className="text-xs text-slate-500">{s.timeRange}</div>
+                {sessions.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                    История занятий пуста.
+                  </div>
+                ) : (
+                  sessions.map(s => {
+                    const status = (s.attendance && s.attendance[athlete.id]) || 'unmarked';
+                    return (
+                      <div key={s.id} className="p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-bold text-slate-900">{s.date} • {s.topic}</div>
+                          <div className="text-xs text-slate-500">{s.timeRange}</div>
+                        </div>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                          status === 'present'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : status === 'absent'
+                            ? 'bg-red-100 text-red-800'
+                            : status === 'excused'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {status === 'present'
+                            ? 'Присутствовал'
+                            : status === 'absent'
+                            ? 'Отсутствовал'
+                            : status === 'excused'
+                            ? 'Уважительный пропуск'
+                            : 'Не отмечено'}
+                        </span>
                       </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                        status === 'present'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : status === 'absent'
-                          ? 'bg-red-100 text-red-800'
-                          : status === 'excused'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {status === 'present'
-                          ? 'Присутствовал'
-                          : status === 'absent'
-                          ? 'Отсутствовал'
-                          : status === 'excused'
-                          ? 'Уважительный пропуск'
-                          : 'Не отмечено'}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
@@ -399,17 +426,23 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div className="space-y-2">
-                {weights.filter(w => w.athleteId === athlete.id).map(w => (
-                  <div key={w.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-slate-900 text-sm">{w.date}</span>
-                      <div className="text-xs text-slate-500">{w.context}</div>
-                    </div>
-                    <span className="text-base font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200">
-                      {w.weightKg} кг
-                    </span>
+                {weights.filter(w => w.athleteId === athlete.id).length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                    Записи взвешиваний отсутствуют.
                   </div>
-                ))}
+                ) : (
+                  weights.filter(w => w.athleteId === athlete.id).map(w => (
+                    <div key={w.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-slate-900 text-sm">{w.date}</span>
+                        <div className="text-xs text-slate-500">{w.context}</div>
+                      </div>
+                      <span className="text-base font-black text-slate-900 bg-white px-3 py-1 rounded-lg border border-slate-200">
+                        {w.weightKg} кг
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

@@ -334,60 +334,66 @@ export const AthleteView: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {sessions.map(s => {
-              const status = s.attendance[me.id] || 'unmarked';
+            {sessions.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
+                Расписание тренировок пусто
+              </div>
+            ) : (
+              sessions.map(s => {
+                const status = (s.attendance && s.attendance[me.id]) || 'unmarked';
 
-              return (
-                <div
-                  key={s.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-slate-900 text-base">{s.date}</span>
-                      <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                        {s.timeRange}
-                      </span>
+                return (
+                  <div
+                    key={s.id}
+                    className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-slate-900 text-base">{s.date}</span>
+                        <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                          {s.timeRange}
+                        </span>
+                      </div>
+                      <div className="text-sm font-semibold text-slate-800">{s.topic}</div>
+                      <div className="text-xs text-slate-500">Зал самбо №1 • Форма самбо</div>
                     </div>
-                    <div className="text-sm font-semibold text-slate-800">{s.topic}</div>
-                    <div className="text-xs text-slate-500">Зал самбо №1 • Форма самбо</div>
-                  </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    {status === 'present' && (
-                      <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" /> Был на занятии
-                      </span>
-                    )}
-                    {status === 'absent' && (
-                      <span className="px-3 py-1.5 rounded-xl bg-red-100 text-red-800 text-xs font-bold">
-                        Пропуск
-                      </span>
-                    )}
-                    {status === 'excused' && (
-                      <span className="px-3 py-1.5 rounded-xl bg-blue-100 text-blue-800 text-xs font-bold flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" /> Уважительный пропуск
-                      </span>
-                    )}
-                    {status === 'unmarked' && (
-                      <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">
-                        Запланировано
-                      </span>
-                    )}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {status === 'present' && (
+                        <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4" /> Был на занятии
+                        </span>
+                      )}
+                      {status === 'absent' && (
+                        <span className="px-3 py-1.5 rounded-xl bg-red-100 text-red-800 text-xs font-bold">
+                          Пропуск
+                        </span>
+                      )}
+                      {status === 'excused' && (
+                        <span className="px-3 py-1.5 rounded-xl bg-blue-100 text-blue-800 text-xs font-bold flex items-center gap-1.5">
+                          <Clock className="w-4 h-4" /> Уважительный пропуск
+                        </span>
+                      )}
+                      {status === 'unmarked' && (
+                        <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">
+                          Запланировано
+                        </span>
+                      )}
 
-                    <button
-                      onClick={() => setActiveModalText({
-                        title: `План занятия: ${s.topic}`,
-                        content: `Дата: ${s.date} (${s.timeRange})\n\nЭтапы занятия:\n${s.plan.map(p => `• ${p.timeRange}: ${p.title}`).join('\n')}`
-                      })}
-                      className="px-3.5 py-1.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition"
-                    >
-                      План
-                    </button>
+                      <button
+                        onClick={() => setActiveModalText({
+                          title: `План занятия: ${s.topic}`,
+                          content: `Дата: ${s.date} (${s.timeRange})\n\nЭтапы занятия:\n${s.plan.map(p => `• ${p.timeRange}: ${p.title}`).join('\n')}`
+                        })}
+                        className="px-3.5 py-1.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition"
+                      >
+                        План
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}

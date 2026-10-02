@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { X, Award, CheckCircle } from 'lucide-react';
+import { X, Award, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Props {
   athleteId: string;
@@ -18,25 +18,54 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
   const [exerciseTitle, setExerciseTitle] = useState(selectedSkill?.recommendedExercise || '');
   const [deadline, setDeadline] = useState('2026-10-12');
   const [publishedToFamily, setPublishedToFamily] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSkillChange = (newSkillId: string) => {
     setSelectedSkillId(newSkillId);
+    setErrorMsg(null);
     const skill = skills.find(s => s.id === newSkillId);
     if (skill) {
       setExerciseTitle(skill.recommendedExercise);
     }
   };
 
+  const validate = (): string | null => {
+    const trimmedObs = observation.trim();
+    if (!trimmedObs || trimmedObs.length < 3) {
+      return 'Укажите педагогическое наблюдение тренера (не менее 3 символов).';
+    }
+
+    if (!selectedSkill) {
+      return 'Выберите навык из каталога самбо.';
+    }
+
+    const trimmedEx = exerciseTitle.trim();
+    if (!trimmedEx || trimmedEx.length < 3) {
+      return 'Укажите рекомендуемое упражнение или методическое задание.';
+    }
+
+    if (!deadline) {
+      return 'Укажите дату контроля выполнения задания.';
+    }
+
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validate();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
     if (!selectedSkill) return;
 
     addObservationTask({
       athleteId: selectedAthleteId,
-      observation,
+      observation: observation.trim(),
       skillId: selectedSkillId,
       skillTitle: selectedSkill.title,
-      exerciseTitle: exerciseTitle || selectedSkill.recommendedExercise,
+      exerciseTitle: exerciseTitle.trim() || selectedSkill.recommendedExercise,
       deadline,
       status: 'active',
       publishedToFamily,
@@ -81,14 +110,25 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
           <span className="text-red-600 font-bold shrink-0">4. Контроль</span>
         </div>
 
+        {/* Validation Error Banner */}
+        {errorMsg && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-start gap-2.5 text-xs text-red-800">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Спортсмен
+              Спортсмен *
             </label>
             <select
               value={selectedAthleteId}
-              onChange={e => setSelectedAthleteId(e.target.value)}
+              onChange={e => {
+                setSelectedAthleteId(e.target.value);
+                setErrorMsg(null);
+              }}
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-medium"
             >
               {athletes.map(a => (
@@ -106,7 +146,10 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
             <textarea
               rows={2}
               value={observation}
-              onChange={e => setObservation(e.target.value)}
+              onChange={e => {
+                setObservation(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
               placeholder="Что заметил тренер на татами..."
@@ -142,7 +185,10 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
             <input
               type="text"
               value={exerciseTitle}
-              onChange={e => setExerciseTitle(e.target.value)}
+              onChange={e => {
+                setExerciseTitle(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
             />

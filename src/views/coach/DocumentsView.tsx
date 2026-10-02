@@ -115,18 +115,25 @@ export const DocumentsView: React.FC = () => {
       </div>
 
       {/* Documents Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredDocs.map(doc => {
-          const athlete = athletes.find(a => a.id === doc.athleteId);
-          const expiryStatus = getDocumentExpiryStatus(doc.expiryDate);
-          const isVerified = doc.verificationStatus === 'verified';
-          const isUnverified = doc.verificationStatus === 'unverified';
+      {filteredDocs.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500">
+          <FileText className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+          <p className="font-medium text-sm">Документы не найдены</p>
+          <p className="text-xs text-slate-400 mt-1">Попробуйте изменить параметры фильтрации или поисковый запрос</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredDocs.map(doc => {
+            const athlete = athletes.find(a => a.id === doc.athleteId);
+            const expiryStatus = getDocumentExpiryStatus(doc.expiryDate);
+            const isVerified = doc.verificationStatus === 'verified';
+            const isUnverified = doc.verificationStatus === 'unverified';
 
-          return (
-            <div
-              key={doc.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between"
-            >
+            return (
+              <div
+                key={doc.id}
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between"
+              >
               <div>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
@@ -196,7 +203,8 @@ export const DocumentsView: React.FC = () => {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {previewDoc && (
         <DocumentViewModal

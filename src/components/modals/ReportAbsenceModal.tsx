@@ -15,17 +15,38 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
 
   const [reasonCategory, setReasonCategory] = useState<'illness' | 'family' | 'custom'>('illness');
   const [comment, setComment] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const validate = (): string | null => {
+    if (!selectedSessionId) {
+      return 'Выберите тренировочное занятие из списка.';
+    }
+
+    if (reasonCategory === 'custom') {
+      const trimmed = comment.trim();
+      if (!trimmed || trimmed.length < 3) {
+        return 'При выборе категории «Иная причина» необходимо указать комментарий с причиной пропуска (не менее 3 символов).';
+      }
+    }
+
+    return null;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validate();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
 
     let fullReason = '';
     if (reasonCategory === 'illness') {
-      fullReason = `Болезнь спортсмена (справка будет предоставлена)${comment ? ': ' + comment : ''}`;
+      fullReason = `Болезнь спортсмена (справка будет предоставлена)${comment.trim() ? ': ' + comment.trim() : ''}`;
     } else if (reasonCategory === 'family') {
-      fullReason = `Заявление родителя (семейные обстоятельства)${comment ? ': ' + comment : ''}`;
+      fullReason = `Заявление родителя (семейные обстоятельства)${comment.trim() ? ': ' + comment.trim() : ''}`;
     } else {
-      fullReason = comment || 'Уважительная причина по согласованию';
+      fullReason = comment.trim();
     }
 
     reportAbsence(athleteId, selectedSessionId, fullReason);
@@ -56,6 +77,14 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
           </button>
         </div>
 
+        {/* Validation Error Banner */}
+        {errorMsg && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-start gap-2.5 text-xs text-red-800">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+        )}
+
         {/* Content Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-2.5">
@@ -68,11 +97,14 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Выберите занятие для пропуска
+              Выберите занятие для пропуска *
             </label>
             <select
               value={selectedSessionId}
-              onChange={e => setSelectedSessionId(e.target.value)}
+              onChange={e => {
+                setSelectedSessionId(e.target.value);
+                setErrorMsg(null);
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/20"
             >
               {sessions.map(s => (
@@ -85,7 +117,7 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Причина пропуска
+              Причина пропуска *
             </label>
             <div className="space-y-2">
               <label
@@ -99,7 +131,10 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
                   type="radio"
                   name="reason"
                   checked={reasonCategory === 'illness'}
-                  onChange={() => setReasonCategory('illness')}
+                  onChange={() => {
+                    setReasonCategory('illness');
+                    setErrorMsg(null);
+                  }}
                   className="text-red-600 focus:ring-red-500"
                 />
                 <div>
@@ -119,7 +154,10 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
                   type="radio"
                   name="reason"
                   checked={reasonCategory === 'family'}
-                  onChange={() => setReasonCategory('family')}
+                  onChange={() => {
+                    setReasonCategory('family');
+                    setErrorMsg(null);
+                  }}
                   className="text-red-600 focus:ring-red-500"
                 />
                 <div>
@@ -139,12 +177,15 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
                   type="radio"
                   name="reason"
                   checked={reasonCategory === 'custom'}
-                  onChange={() => setReasonCategory('custom')}
+                  onChange={() => {
+                    setReasonCategory('custom');
+                    setErrorMsg(null);
+                  }}
                   className="text-red-600 focus:ring-red-500"
                 />
                 <div>
-                  <div className="text-sm">Иная причина</div>
-                  <div className="text-xs text-slate-500 font-normal">Школьная олимпиада или др.</div>
+                  <div className="text-sm">Иная причина *</div>
+                  <div className="text-xs text-slate-500 font-normal">Школьная олимпиада или др. (требует комментария)</div>
                 </div>
               </label>
             </div>
@@ -152,13 +193,16 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Комментарий для тренера
+              Комментарий для тренера {reasonCategory === 'custom' && <span className="text-red-500">*</span>}
             </label>
             <textarea
               rows={2}
               value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Укажите подробности при необходимости..."
+              onChange={e => {
+                setComment(e.target.value);
+                setErrorMsg(null);
+              }}
+              placeholder={reasonCategory === 'custom' ? 'Обязательно укажите причину пропуска...' : 'Укажите подробности при необходимости...'}
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
             />
           </div>

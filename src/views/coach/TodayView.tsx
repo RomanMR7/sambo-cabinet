@@ -316,51 +316,58 @@ export const TodayView: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {tasks.map(t => {
-              const ath = athletes.find(a => a.id === t.athleteId);
-              return (
-                <div
-                  key={t.id}
-                  className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition flex items-start justify-between gap-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs mt-0.5">
-                      {ath?.avatarInitials || 'СП'}
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-900">
-                        {ath?.shortName || 'Спортсмен'} — «{t.exerciseTitle}»
+            {tasks.length === 0 ? (
+              <div className="p-6 text-center text-slate-500">
+                <p className="font-medium text-sm">Активных задач нет</p>
+                <p className="text-xs text-slate-400 mt-1">Все задачи завершены или еще не назначены</p>
+              </div>
+            ) : (
+              tasks.map(t => {
+                const ath = athletes.find(a => a.id === t.athleteId);
+                return (
+                  <div
+                    key={t.id}
+                    className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition flex items-start justify-between gap-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-xs mt-0.5">
+                        {ath?.avatarInitials || 'СП'}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        Навык: <span className="font-semibold text-slate-700">{t.skillTitle}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[11px] font-semibold text-slate-400">
-                          Контроль: {t.deadline}
-                        </span>
-                        {t.publishedToFamily && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Доступно семье
+                      <div>
+                        <div className="text-sm font-bold text-slate-900">
+                          {ath?.shortName || 'Спортсмен'} — «{t.exerciseTitle}»
+                        </div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          Навык: <span className="font-semibold text-slate-700">{t.skillTitle}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            Контроль: {t.deadline}
                           </span>
-                        )}
+                          {t.publishedToFamily && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Доступно семье
+                            </span>
+                          )}
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      {t.status === 'completed' ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Зачтено
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">
+                          В работе
+                        </span>
+                      )}
                     </div>
                   </div>
-
-                <div className="shrink-0">
-                  {t.status === 'completed' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Зачтено
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">
-                      В работе
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>

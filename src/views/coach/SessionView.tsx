@@ -27,7 +27,7 @@ export const SessionView: React.FC = () => {
     addSessionNote
   } = useApp();
 
-  const currentSession = sessions.find(s => s.id === selectedSessionId) || sessions[0];
+  const currentSession = sessions.find(s => s && s.id === selectedSessionId) || sessions[0];
   const [activeTab, setActiveTab] = useState<'plan' | 'attendance' | 'fact' | 'observations'>('attendance');
   const [selectedAthleteForNote, setSelectedAthleteForNote] = useState<string>('ath-1');
   const [noteInput, setNoteInput] = useState('');
@@ -36,7 +36,17 @@ export const SessionView: React.FC = () => {
   const [excuseTargetAthlete, setExcuseTargetAthlete] = useState<typeof athletes[0] | null>(null);
   const [excuseReasonInput, setExcuseReasonInput] = useState('Болезнь (справка от врача)');
 
+  if (!currentSession) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
+        <h2 className="text-xl font-bold text-slate-800">Занятие не найдено</h2>
+        <p className="text-sm text-slate-500">В расписании группы нет запланированных тренировочных занятий.</p>
+      </div>
+    );
+  }
+
   const handleStatusChange = (athleteId: string, status: AttendanceStatus) => {
+    if (!currentSession) return;
     updateAttendance(currentSession.id, athleteId, status);
   };
 
@@ -47,7 +57,7 @@ export const SessionView: React.FC = () => {
 
   const handleAddQuickNote = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!noteInput.trim()) return;
+    if (!currentSession || !noteInput.trim()) return;
     addSessionNote(currentSession.id, selectedAthleteForNote, noteInput.trim());
     setNoteInput('');
   };
@@ -175,9 +185,14 @@ export const SessionView: React.FC = () => {
               </div>
 
               <div className="divide-y divide-slate-100">
-                {athletes.map(athlete => {
-                  const status: AttendanceStatus = currentSession.attendance[athlete.id] || 'unmarked';
-                  const exceptionReason = currentSession.exceptions[athlete.id];
+                {athletes.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">
+                    Список спортсменов пуст
+                  </div>
+                ) : (
+                  athletes.map(athlete => {
+                    const status: AttendanceStatus = (currentSession.attendance && currentSession.attendance[athlete.id]) || 'unmarked';
+                    const exceptionReason = currentSession.exceptions && currentSession.exceptions[athlete.id];
 
                   return (
                     <div
@@ -266,7 +281,8 @@ export const SessionView: React.FC = () => {
                       </div>
                     </div>
                   );
-                })}
+                })
+              )}
               </div>
             </div>
           )}

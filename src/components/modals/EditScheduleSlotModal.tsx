@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ScheduleSlot } from '../../types';
-import { X, Calendar, Save, Trash2 } from 'lucide-react';
+import { X, Calendar, Save, Trash2, AlertCircle } from 'lucide-react';
 
 interface Props {
   slot?: ScheduleSlot | null; // null = adding new slot
@@ -17,28 +17,61 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
   const [hall, setHall] = useState(slot?.hall || 'Зал самбо №1');
   const [coach, setCoach] = useState(slot?.coach || 'Иванов А. В.');
   const [group, setGroup] = useState(slot?.group || 'Группа 1');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
+  const validate = (): string | null => {
+    if (!day.trim()) {
+      return 'Выберите день недели проведения занятия.';
+    }
+
+    const trimmedTime = time.trim();
+    if (!trimmedTime || trimmedTime.length < 3) {
+      return 'Укажите время проведения занятия (например, "18:00–19:00").';
+    }
+
+    const trimmedHall = hall.trim();
+    if (!trimmedHall || trimmedHall.length < 2) {
+      return 'Укажите зал проведения тренировки.';
+    }
+
+    const trimmedCoach = coach.trim();
+    if (!trimmedCoach || trimmedCoach.length < 3) {
+      return 'Укажите ФИО тренера занятия.';
+    }
+
+    const trimmedGroup = group.trim();
+    if (!trimmedGroup || trimmedGroup.length < 2) {
+      return 'Укажите название группы.';
+    }
+
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!day || !time) return;
+    const err = validate();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
 
     if (slot) {
       updateScheduleSlot(slot.id, {
-        day,
-        time,
-        hall,
-        coach,
-        group
+        day: day.trim(),
+        time: time.trim(),
+        hall: hall.trim(),
+        coach: coach.trim(),
+        group: group.trim()
       });
     } else {
       addScheduleSlot({
-        day,
-        time,
-        hall,
-        coach,
-        group
+        day: day.trim(),
+        time: time.trim(),
+        hall: hall.trim(),
+        coach: coach.trim(),
+        group: group.trim()
       });
     }
 
@@ -78,15 +111,26 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
           </button>
         </div>
 
+        {/* Validation Error Banner */}
+        {errorMsg && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-start gap-2.5 text-xs text-red-800">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+        )}
+
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              День недели
+              День недели *
             </label>
             <select
               value={day}
-              onChange={e => setDay(e.target.value)}
+              onChange={e => {
+                setDay(e.target.value);
+                setErrorMsg(null);
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white"
             >
               {daysOfWeek.map(d => (
@@ -99,13 +143,16 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Время проведения
+              Время проведения *
             </label>
             <input
               type="text"
               required
               value={time}
-              onChange={e => setTime(e.target.value)}
+              onChange={e => {
+                setTime(e.target.value);
+                setErrorMsg(null);
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-mono"
               placeholder="18:00–19:00"
             />
@@ -113,13 +160,16 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Зал
+              Зал *
             </label>
             <input
               type="text"
               required
               value={hall}
-              onChange={e => setHall(e.target.value)}
+              onChange={e => {
+                setHall(e.target.value);
+                setErrorMsg(null);
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
               placeholder="Зал самбо №1"
             />
@@ -128,13 +178,16 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Тренер
+                Тренер *
               </label>
               <input
                 type="text"
                 required
                 value={coach}
-                onChange={e => setCoach(e.target.value)}
+                onChange={e => {
+                  setCoach(e.target.value);
+                  setErrorMsg(null);
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                 placeholder="Иванов А. В."
               />
@@ -142,13 +195,16 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Группа
+                Группа *
               </label>
               <input
                 type="text"
                 required
                 value={group}
-                onChange={e => setGroup(e.target.value)}
+                onChange={e => {
+                  setGroup(e.target.value);
+                  setErrorMsg(null);
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                 placeholder="Группа 1"
               />

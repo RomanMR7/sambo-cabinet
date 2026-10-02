@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AdmissionStatus, AdmissionDecision } from '../../types';
-import { X, ShieldCheck, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, XCircle, Clock, AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface Props {
   athleteId: string;
@@ -13,27 +13,52 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
   const athlete = athletes.find(a => a.id === athleteId);
 
   const [status, setStatus] = useState<AdmissionStatus>(
-    athlete?.admissionDecision.status || 'pending'
+    athlete?.admissionDecision?.status || 'pending'
   );
   const [basis, setBasis] = useState(
-    athlete?.admissionDecision.basis || 'На основании действующей справки и страховки'
+    athlete?.admissionDecision?.basis || 'На основании действующей справки и страховки'
   );
   const [validUntil, setValidUntil] = useState(
-    athlete?.admissionDecision.validUntil || '2026-11-15'
+    athlete?.admissionDecision?.validUntil || '2026-11-15'
   );
   const [reviewedBy, setReviewedBy] = useState(
-    athlete?.admissionDecision.reviewedBy || 'Тренер 1 (Иванов А. В.)'
+    athlete?.admissionDecision?.reviewedBy || 'Тренер 1 (Иванов А. В.)'
   );
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!athlete) return null;
 
+  const validate = (): string | null => {
+    const trimmedBasis = basis.trim();
+    if (!trimmedBasis || trimmedBasis.length < 5) {
+      return 'Укажите текстовое основание решения (не менее 5 символов).';
+    }
+
+    const trimmedReviewer = reviewedBy.trim();
+    if (!trimmedReviewer || trimmedReviewer.length < 3) {
+      return 'Укажите ответственное лицо (тренера), принимающего решение.';
+    }
+
+    if (!validUntil) {
+      return 'Укажите дату обязательного пересмотра допуска.';
+    }
+
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validate();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
+
     const decision: AdmissionDecision = {
       status,
-      basis,
+      basis: basis.trim(),
       reviewedAt: '2026-10-06',
-      reviewedBy,
+      reviewedBy: reviewedBy.trim(),
       validUntil: validUntil || undefined
     };
     updateAdmissionDecision(athleteId, decision);
@@ -63,6 +88,14 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Validation Error Banner */}
+        {errorMsg && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-start gap-2.5 text-xs text-red-800">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+        )}
 
         {/* Content Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
@@ -129,7 +162,10 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
             <textarea
               rows={3}
               value={basis}
-              onChange={e => setBasis(e.target.value)}
+              onChange={e => {
+                setBasis(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               placeholder="Например: Диспансеризация пройдена, оригинал страховки сверен..."
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
@@ -139,24 +175,30 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Дата обязательного пересмотра
+                Дата обязательного пересмотра *
               </label>
               <input
                 type="date"
                 value={validUntil}
-                onChange={e => setValidUntil(e.target.value)}
+                onChange={e => {
+                  setValidUntil(e.target.value);
+                  setErrorMsg(null);
+                }}
                 required
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
               />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Ответственное лицо
+                Ответственное лицо *
               </label>
               <input
                 type="text"
                 value={reviewedBy}
-                onChange={e => setReviewedBy(e.target.value)}
+                onChange={e => {
+                  setReviewedBy(e.target.value);
+                  setErrorMsg(null);
+                }}
                 required
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
               />

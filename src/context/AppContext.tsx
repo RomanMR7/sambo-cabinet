@@ -14,7 +14,9 @@ import {
   AttendanceStatus,
   VerificationStatus,
   AdmissionDecision,
-  ScheduleSlot
+  ScheduleSlot,
+  ClubUser,
+  ExerciseItem
 } from '../types';
 import {
   initialAthletes,
@@ -27,7 +29,10 @@ import {
   initialVideoNotes,
   initialCompetitions,
   initialGroupInfo,
-  initialScheduleSlots
+  initialScheduleSlots,
+  initialGroups,
+  initialClubUsers,
+  initialExercises
 } from '../data/seedData';
 
 const STORAGE_KEY = 'sambo_cabinet_state_v1';
@@ -102,6 +107,10 @@ export interface AppState {
   competitions: Competition[];
   groupInfo: GroupInfo;
   scheduleSlots: ScheduleSlot[];
+  groups: GroupInfo[];
+  selectedGroupId: string;
+  clubUsers: ClubUser[];
+  exercises: ExerciseItem[];
   selectedAthleteId: string;
   selectedSessionId: string;
   activeNav: string;
@@ -114,6 +123,7 @@ export interface AppContextType extends AppState {
   setActiveNav: (nav: string) => void;
   setSelectedAthleteId: (id: string) => void;
   setSelectedSessionId: (id: string) => void;
+  setSelectedGroupId: (groupId: string) => void;
   updateAttendance: (sessionId: string, athleteId: string, status: AttendanceStatus) => void;
   reportAbsence: (athleteId: string, sessionId: string, reason: string) => void;
   markAllPresent: (sessionId: string) => void;
@@ -134,6 +144,29 @@ export interface AppContextType extends AppState {
   addScheduleSlot: (slot: Omit<ScheduleSlot, 'id'>) => void;
   updateScheduleSlot: (slotId: string, slot: Partial<ScheduleSlot>) => void;
   deleteScheduleSlot: (slotId: string) => void;
+  // Staff & Role Management
+  addClubUser: (user: Omit<ClubUser, 'id'>) => void;
+  updateClubUser: (userId: string, data: Partial<ClubUser>) => void;
+  deleteClubUser: (userId: string) => void;
+  setHeadManager: (userId: string) => void;
+  toggleVerifierRole: (userId: string) => void;
+  // Group & Athlete Composition
+  addGroup: (group: Omit<GroupInfo, 'id' | 'athleteCount'>) => void;
+  updateGroup: (groupId: string, data: Partial<GroupInfo>) => void;
+  deleteGroup: (groupId: string) => void;
+  moveAthleteToGroup: (athleteId: string, targetGroupId: string) => void;
+  expelAthlete: (athleteId: string) => void;
+  addAthleteToGroup: (athlete: Omit<Athlete, 'id' | 'avatarInitials'>) => void;
+  // Exercise catalog & Training Session Constructor
+  addExercise: (exercise: Omit<ExerciseItem, 'id'>) => void;
+  deleteExercise: (exerciseId: string) => void;
+  createTrainingSessionFromPlan: (data: {
+    groupId: string;
+    date: string;
+    timeRange: string;
+    topic: string;
+    exercises: Array<{ title: string; durationMinutes: number }>;
+  }) => void;
   resetToDemo: () => void;
   exportData: () => string;
   downloadBackup: () => void;
@@ -156,6 +189,10 @@ function getDefaultState(): AppState {
     competitions: initialCompetitions,
     groupInfo: initialGroupInfo,
     scheduleSlots: initialScheduleSlots,
+    groups: initialGroups,
+    selectedGroupId: 'grp-1',
+    clubUsers: initialClubUsers,
+    exercises: initialExercises,
     selectedAthleteId: 'ath-1',
     selectedSessionId: 'ses-today',
     activeNav: 'today'
@@ -174,9 +211,18 @@ function getValidatedState(raw: any): AppState {
   const validRoles: Role[] = ['coach', 'athlete', 'parent', 'admin', 'verifier'];
   const role: Role = validRoles.includes(raw.role) ? raw.role : defaults.role;
 
-  // Validate athletes
+  // Validate athletes with deep object sanitization
   const athletes = (Array.isArray(raw.athletes) && raw.athletes.length > 0)
-    ? raw.athletes.filter((a: any) => a && typeof a === 'object' && typeof a.id === 'string' && typeof a.fullName === 'string')
+    ? raw.athletes
+        .filter((a: any) => a && typeof a === 'object' && typeof a.id === 'string' && typeof a.fullName === 'string')
+        .map((a: any) => ({
+          ...a,
+          shortName: typeof a.shortName === 'string' && a.shortName ? a.shortName : (a.fullName || '').slice(0, 10),
+          avatarInitials: typeof a.avatarInitials === 'string' && a.avatarInitials ? a.avatarInitials : 'СА',
+          admissionDecision: (a.admissionDecision && typeof a.admissionDecision === 'object' && typeof a.admissionDecision.status === 'string')
+            ? a.admissionDecision
+            : { status: 'pending', basis: 'Ожидает повторного медицинского допуска', reviewedAt: '2026-10-01', reviewedBy: 'Тренер 1' }
+        }))
     : defaults.athletes;
   const safeAthletes: Athlete[] = athletes.length > 0 ? athletes : defaults.athletes;
 
@@ -240,6 +286,36 @@ function getValidatedState(raw: any): AppState {
     ? raw.scheduleSlots.filter((sl: any) => sl && typeof sl === 'object' && typeof sl.id === 'string')
     : defaults.scheduleSlots;
 
+  // Validate groups
+  const groups = (Array.isArray(raw.groups) && raw.groups.length > 0)
+    ? raw.groups.filter((g: any) => g && typeof g === 'object' && typeof g.id === 'string' && typeof g.name === 'string')
+    : defaults.groups;
+  const safeGroups: GroupInfo[] = groups.length > 0 ? groups : defaults.groups;
+
+  // Validate clubUsers
+  const clubUsers = (Array.isArray(raw.clubUsers) && raw.clubUsers.length > 0)
+    ? raw.clubUsers.filter((u: any) => u && typeof u === 'object' && typeof u.id === 'string' && typeof u.fullName === 'string')
+    : defaults.clubUsers;
+  const safeClubUsers: ClubUser[] = clubUsers.length > 0 ? clubUsers : defaults.clubUsers;
+
+  // Validate exercises
+  const exercises = (Array.isArray(raw.exercises) && raw.exercises.length > 0)
+    ? raw.exercises.filter((e: any) => e && typeof e === 'object' && typeof e.id === 'string' && typeof e.title === 'string')
+    : defaults.exercises;
+  const safeExercises: ExerciseItem[] = exercises.length > 0 ? exercises : defaults.exercises;
+
+  const safeSelectedAthleteId = safeAthletes.some(a => a.id === raw.selectedAthleteId)
+    ? raw.selectedAthleteId
+    : (safeAthletes[0]?.id || defaults.selectedAthleteId);
+
+  const safeSelectedSessionId = safeSessions.some(s => s.id === raw.selectedSessionId)
+    ? raw.selectedSessionId
+    : (safeSessions[0]?.id || defaults.selectedSessionId);
+
+  const safeSelectedGroupId = safeGroups.some(g => g.id === raw.selectedGroupId)
+    ? raw.selectedGroupId
+    : (safeGroups[0]?.id || 'grp-1');
+
   return {
     role,
     athletes: safeAthletes,
@@ -253,8 +329,12 @@ function getValidatedState(raw: any): AppState {
     competitions,
     groupInfo,
     scheduleSlots,
-    selectedAthleteId: typeof raw.selectedAthleteId === 'string' ? raw.selectedAthleteId : defaults.selectedAthleteId,
-    selectedSessionId: typeof raw.selectedSessionId === 'string' ? raw.selectedSessionId : defaults.selectedSessionId,
+    groups: safeGroups,
+    selectedGroupId: safeSelectedGroupId,
+    clubUsers: safeClubUsers,
+    exercises: safeExercises,
+    selectedAthleteId: safeSelectedAthleteId,
+    selectedSessionId: safeSelectedSessionId,
     activeNav: typeof raw.activeNav === 'string' ? raw.activeNav : defaults.activeNav
   };
 }
@@ -295,6 +375,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setStorageError('Не удалось синхронизировать состояние в хранилище.');
     }
   }, [state]);
+
+  // Synchronize state across browser tabs via storage event listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          const validated = getValidatedState(parsed);
+          setState(validated);
+        } catch {
+          // Ignore unparseable external changes
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const setRole = (role: Role) => {
     if (!role) return;
@@ -721,6 +819,241 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const setSelectedGroupId = (groupId: string) => {
+    setState(prev => ({ ...prev, selectedGroupId: groupId }));
+  };
+
+  const addClubUser = (userData: Omit<ClubUser, 'id'>) => {
+    if (!userData || !userData.fullName) return;
+    const newUser: ClubUser = {
+      ...userData,
+      id: `usr-${Date.now()}`
+    };
+    setState(prev => ({
+      ...prev,
+      clubUsers: [...(Array.isArray(prev.clubUsers) ? prev.clubUsers : []), newUser]
+    }));
+  };
+
+  const updateClubUser = (userId: string, data: Partial<ClubUser>) => {
+    if (!userId || !data) return;
+    setState(prev => ({
+      ...prev,
+      clubUsers: (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).map(u =>
+        u && u.id === userId ? { ...u, ...data } : u
+      )
+    }));
+  };
+
+  const deleteClubUser = (userId: string) => {
+    if (!userId) return;
+    setState(prev => ({
+      ...prev,
+      clubUsers: (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).filter(u => u && u.id !== userId)
+    }));
+  };
+
+  const setHeadManager = (userId: string) => {
+    if (!userId) return;
+    setState(prev => ({
+      ...prev,
+      clubUsers: (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).map(u => ({
+        ...u,
+        isHeadManager: u.id === userId
+      }))
+    }));
+  };
+
+  const toggleVerifierRole = (userId: string) => {
+    if (!userId) return;
+    setState(prev => ({
+      ...prev,
+      clubUsers: (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).map(u =>
+        u.id === userId ? { ...u, isVerifierAssigned: !u.isVerifierAssigned } : u
+      )
+    }));
+  };
+
+  const addGroup = (groupData: Omit<GroupInfo, 'id' | 'athleteCount'>) => {
+    if (!groupData || !groupData.name) return;
+    const newId = `grp-${Date.now()}`;
+    const newGroup: GroupInfo = {
+      ...groupData,
+      id: newId,
+      athleteCount: 0
+    };
+    setState(prev => ({
+      ...prev,
+      groups: [...(Array.isArray(prev.groups) ? prev.groups : []), newGroup]
+    }));
+  };
+
+  const updateGroup = (groupId: string, data: Partial<GroupInfo>) => {
+    if (!groupId || !data) return;
+    setState(prev => {
+      const updatedGroups = (Array.isArray(prev.groups) ? prev.groups : []).map(g =>
+        g && g.id === groupId ? { ...g, ...data } : g
+      );
+      const updatedGroupInfo = (prev.groupInfo && prev.groupInfo.id === groupId)
+        ? { ...prev.groupInfo, ...data }
+        : prev.groupInfo;
+      return {
+        ...prev,
+        groups: updatedGroups,
+        groupInfo: updatedGroupInfo
+      };
+    });
+  };
+
+  const deleteGroup = (groupId: string) => {
+    if (!groupId) return;
+    setState(prev => ({
+      ...prev,
+      groups: (Array.isArray(prev.groups) ? prev.groups : []).filter(g => g && g.id !== groupId)
+    }));
+  };
+
+  const moveAthleteToGroup = (athleteId: string, targetGroupId: string) => {
+    if (!athleteId || !targetGroupId) return;
+    setState(prev => {
+      const updatedAthletes = (Array.isArray(prev.athletes) ? prev.athletes : []).map(a =>
+        a && a.id === athleteId ? { ...a, groupId: targetGroupId } : a
+      );
+      const updatedGroups = (Array.isArray(prev.groups) ? prev.groups : []).map(g => ({
+        ...g,
+        athleteCount: updatedAthletes.filter(a => a && a.groupId === g.id && a.isActive).length
+      }));
+      return {
+        ...prev,
+        athletes: updatedAthletes,
+        groups: updatedGroups,
+        groupInfo: {
+          ...prev.groupInfo,
+          athleteCount: updatedAthletes.filter(a => a && a.groupId === prev.groupInfo?.id && a.isActive).length
+        }
+      };
+    });
+  };
+
+  const expelAthlete = (athleteId: string) => {
+    if (!athleteId) return;
+    setState(prev => {
+      const updatedAthletes = (Array.isArray(prev.athletes) ? prev.athletes : []).map(a =>
+        a && a.id === athleteId ? { ...a, isActive: false } : a
+      );
+      const updatedGroups = (Array.isArray(prev.groups) ? prev.groups : []).map(g => ({
+        ...g,
+        athleteCount: updatedAthletes.filter(a => a && a.groupId === g.id && a.isActive).length
+      }));
+      return {
+        ...prev,
+        athletes: updatedAthletes,
+        groups: updatedGroups,
+        groupInfo: {
+          ...prev.groupInfo,
+          athleteCount: updatedAthletes.filter(a => a && a.groupId === prev.groupInfo?.id && a.isActive).length
+        }
+      };
+    });
+  };
+
+  const addAthleteToGroup = (athleteData: Omit<Athlete, 'id' | 'avatarInitials'>) => {
+    if (!athleteData || !athleteData.fullName) return;
+    const parts = athleteData.fullName.trim().split(/\s+/);
+    const initials = parts.map(p => p[0]?.toUpperCase() || '').slice(0, 2).join('') || 'СА';
+    const newAthlete: Athlete = {
+      ...athleteData,
+      id: `ath-${Date.now()}`,
+      avatarInitials: initials,
+      isActive: true,
+      admissionDecision: athleteData.admissionDecision || {
+        status: 'pending',
+        basis: 'Новый спортсмен, требуется медкомиссия',
+        reviewedAt: new Date().toISOString().slice(0, 10),
+        reviewedBy: 'Тренер'
+      }
+    };
+    setState(prev => {
+      const updatedAthletes = [...(Array.isArray(prev.athletes) ? prev.athletes : []), newAthlete];
+      const updatedGroups = (Array.isArray(prev.groups) ? prev.groups : []).map(g => ({
+        ...g,
+        athleteCount: updatedAthletes.filter(a => a && a.groupId === g.id && a.isActive).length
+      }));
+      return {
+        ...prev,
+        athletes: updatedAthletes,
+        groups: updatedGroups,
+        groupInfo: {
+          ...prev.groupInfo,
+          athleteCount: updatedAthletes.filter(a => a && a.groupId === prev.groupInfo?.id && a.isActive).length
+        }
+      };
+    });
+  };
+
+  const addExercise = (exerciseData: Omit<ExerciseItem, 'id'>) => {
+    if (!exerciseData || !exerciseData.title) return;
+    const newEx: ExerciseItem = {
+      ...exerciseData,
+      id: `ex-${Date.now()}`
+    };
+    setState(prev => ({
+      ...prev,
+      exercises: [...(Array.isArray(prev.exercises) ? prev.exercises : []), newEx]
+    }));
+  };
+
+  const deleteExercise = (exerciseId: string) => {
+    if (!exerciseId) return;
+    setState(prev => ({
+      ...prev,
+      exercises: (Array.isArray(prev.exercises) ? prev.exercises : []).filter(e => e && e.id !== exerciseId)
+    }));
+  };
+
+  const createTrainingSessionFromPlan = (data: {
+    groupId: string;
+    date: string;
+    timeRange: string;
+    topic: string;
+    exercises: Array<{ title: string; durationMinutes: number }>;
+  }) => {
+    if (!data || !data.topic) return;
+    const newSessionId = `ses-${Date.now()}`;
+    const planItems = data.exercises.map((ex, idx) => ({
+      order: idx + 1,
+      title: `${ex.title} (${ex.durationMinutes} мин)`,
+      timeRange: `${ex.durationMinutes} мин`
+    }));
+
+    const groupAthletes = (Array.isArray(state.athletes) ? state.athletes : []).filter(
+      a => a && a.groupId === data.groupId && a.isActive
+    );
+    const initialAttendance: Record<string, AttendanceStatus> = {};
+    groupAthletes.forEach(a => {
+      initialAttendance[a.id] = 'unmarked';
+    });
+
+    const newSession: TrainingSession = {
+      id: newSessionId,
+      groupId: data.groupId,
+      date: data.date,
+      timeRange: data.timeRange,
+      topic: data.topic,
+      isCompleted: false,
+      plan: planItems,
+      attendance: initialAttendance,
+      exceptions: {},
+      notes: []
+    };
+
+    setState(prev => ({
+      ...prev,
+      sessions: [newSession, ...(Array.isArray(prev.sessions) ? prev.sessions : [])],
+      selectedSessionId: newSessionId
+    }));
+  };
+
   const resetToDemo = () => {
     safeRemoveItem(STORAGE_KEY);
     const defaults = getDefaultState();
@@ -798,6 +1131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveNav,
         setSelectedAthleteId,
         setSelectedSessionId,
+        setSelectedGroupId,
         updateAttendance,
         reportAbsence,
         markAllPresent,
@@ -818,6 +1152,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addScheduleSlot,
         updateScheduleSlot,
         deleteScheduleSlot,
+        addClubUser,
+        updateClubUser,
+        deleteClubUser,
+        setHeadManager,
+        toggleVerifierRole,
+        addGroup,
+        updateGroup,
+        deleteGroup,
+        moveAthleteToGroup,
+        expelAthlete,
+        addAthleteToGroup,
+        addExercise,
+        deleteExercise,
+        createTrainingSessionFromPlan,
         resetToDemo,
         exportData,
         downloadBackup,

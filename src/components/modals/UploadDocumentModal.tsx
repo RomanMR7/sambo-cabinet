@@ -11,8 +11,7 @@ interface Props {
 
 export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 'medical', onClose }) => {
   const { uploadDocument, athletes } = useApp();
-  const [selectedAthleteId, setSelectedAthleteId] = useState(athleteId);
-  const currentAthlete = athletes.find(a => a.id === selectedAthleteId) || athletes[0];
+  const athlete = athletes.find(a => a.id === athleteId);
 
   const [docType, setDocType] = useState<DocType>(defaultType);
   const [title, setTitle] = useState(
@@ -25,9 +24,11 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
   const [expiryDate, setExpiryDate] = useState('2027-10-06');
   const [fileName, setFileName] = useState('');
   const [fileSelected, setFileSelected] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleTypeChange = (t: DocType) => {
     setDocType(t);
+    setErrorMsg(null);
     if (t === 'medical') {
       setTitle('Медицинский документ (справка / допуск)');
     } else if (t === 'insurance') {
@@ -42,16 +43,44 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
       const file = e.target.files[0];
       setFileName(file.name);
       setFileSelected(file.name);
+      setErrorMsg(null);
     }
+  };
+
+  const validate = (): string | null => {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle || trimmedTitle.length < 3) {
+      return 'Укажите название документа (не менее 3 символов).';
+    }
+
+    if (docType !== 'consent') {
+      if (!expiryDate) {
+        return 'Укажите срок действия документа.';
+      }
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const minDate = todayStr > '2026-10-06' ? todayStr : '2026-10-06';
+      if (expiryDate < minDate) {
+        return 'Срок действия загружаемого документа не может быть в прошлом. Загрузите действующий документ.';
+      }
+    }
+
+    return null;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalFileName = fileName || `${docType === 'medical' ? 'Мед_справка' : docType === 'insurance' ? 'Полис' : 'Согласие'}_${currentAthlete?.shortName.replace(/[\s.]+/g, '_') || 'спортсмен'}.pdf`;
+    const err = validate();
+    if (err) {
+      setErrorMsg(err);
+      return;
+    }
 
-    uploadDocument(selectedAthleteId, {
+    const finalFileName = fileName || `${docType === 'medical' ? 'Мед_справка' : docType === 'insurance' ? 'Полис' : 'Согласие'}_${athlete?.shortName?.replace(/[\s.]+/g, '_') || 'спортсмен'}.pdf`;
+
+    uploadDocument(athleteId, {
       type: docType,
-      title: title || 'Новый документ',
+      title: title.trim(),
       fileName: finalFileName,
       expiryDate: docType === 'consent' ? undefined : expiryDate
     });
@@ -71,7 +100,7 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
             <div>
               <h3 className="font-bold text-base">Загрузить документ</h3>
               <p className="text-xs text-slate-300">
-                Спортсмен: {currentAthlete?.fullName || currentAthlete?.shortName}
+                Спортсмен: {athlete?.fullName || athlete?.shortName}
               </p>
             </div>
           </div>
@@ -83,6 +112,14 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
           </button>
         </div>
 
+        {/* Validation Error Banner */}
+        {errorMsg && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-start gap-2.5 text-xs text-red-800">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+        )}
+
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
           {/* Important Rule Notice */}
@@ -93,23 +130,6 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
               Загрузка новой копии или изменение даты создаёт новую версию документа и автоматически переводит статус в 
               <span className="font-semibold text-amber-700"> «На проверке»</span> для контролёра.
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Спортсмен
-            </label>
-            <select
-              value={selectedAthleteId}
-              onChange={e => setSelectedAthleteId(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-medium bg-white"
-            >
-              {athletes.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.shortName} ({a.fullName})
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>
@@ -155,12 +175,15 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Название документа
+              Название документа *
             </label>
             <input
               type="text"
               value={title}
-              onChange={e => setTitle(e.target.value)}
+              onChange={e => {
+                setTitle(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-medium"
             />
@@ -169,12 +192,15 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
           {docType !== 'consent' && (
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Срок действия (годен до)
+                Срок действия (годен до) *
               </label>
               <input
                 type="date"
                 value={expiryDate}
-                onChange={e => setExpiryDate(e.target.value)}
+                onChange={e => {
+                  setExpiryDate(e.target.value);
+                  setErrorMsg(null);
+                }}
                 required
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-medium"
               />

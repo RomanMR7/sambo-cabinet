@@ -204,12 +204,18 @@ export const VerifierView: React.FC = () => {
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
                   Назначенные участники
                 </div>
-                {athletes.map(ath => (
-                  <div key={ath.id} className="p-3 rounded-xl border border-slate-200 text-xs">
-                    <div className="font-bold text-slate-900">{ath.shortName}</div>
-                    <div className="text-slate-500">{ath.fullName} • Группа 1</div>
+                {athletes.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-400">
+                    Список участников пуст.
                   </div>
-                ))}
+                ) : (
+                  athletes.map(ath => (
+                    <div key={ath.id} className="p-3 rounded-xl border border-slate-200 text-xs">
+                      <div className="font-bold text-slate-900">{ath.shortName}</div>
+                      <div className="text-slate-500">{ath.fullName} • Группа 1</div>
+                    </div>
+                  ))
+                )}
               </>
             )}
 
@@ -218,28 +224,34 @@ export const VerifierView: React.FC = () => {
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
                   Ранее проверенные
                 </div>
-                {verifiedHistoryDocs.map(doc => {
-                  const ath = athletes.find(a => a.id === doc.athleteId);
-                  const isSelected = doc.id === selectedDoc?.id;
+                {verifiedHistoryDocs.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-400">
+                    История проверок пуста.
+                  </div>
+                ) : (
+                  verifiedHistoryDocs.map(doc => {
+                    const ath = athletes.find(a => a.id === doc.athleteId);
+                    const isSelected = doc.id === selectedDoc?.id;
 
-                  return (
-                    <div
-                      key={doc.id}
-                      onClick={() => setSelectedDocId(doc.id)}
-                      className={`p-3 rounded-xl border cursor-pointer text-xs transition ${
-                        isSelected ? 'border-red-500 bg-red-50/60' : 'border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex justify-between font-bold">
-                        <span>{ath?.shortName}</span>
-                        <span className={doc.verificationStatus === 'verified' ? 'text-emerald-700' : 'text-red-700'}>
-                          {doc.verificationStatus === 'verified' ? 'Подтверждён' : 'Замечание'}
-                        </span>
+                    return (
+                      <div
+                        key={doc.id}
+                        onClick={() => setSelectedDocId(doc.id)}
+                        className={`p-3 rounded-xl border cursor-pointer text-xs transition ${
+                          isSelected ? 'border-red-500 bg-red-50/60' : 'border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex justify-between font-bold">
+                          <span>{ath?.shortName}</span>
+                          <span className={doc.verificationStatus === 'verified' ? 'text-emerald-700' : 'text-red-700'}>
+                            {doc.verificationStatus === 'verified' ? 'Подтверждён' : 'Замечание'}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 mt-0.5">{doc.title}</div>
                       </div>
-                      <div className="text-slate-500 mt-0.5">{doc.title}</div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </>
             )}
           </div>

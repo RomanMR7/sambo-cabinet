@@ -150,3 +150,26 @@ export interface ScheduleSlot {
   coach: string;
   group: string;
 }
+
+export interface ClubUser {
+  id: string;
+  fullName: string;
+  role: 'admin' | 'coach' | 'verifier';
+  phone: string;
+  email: string;
+  title: string;
+  isHeadManager: boolean;
+  isVerifierAssigned: boolean;
+}
+
+export type ExerciseCategory = 'warmup' | 'throws' | 'groundwork' | 'sfp';
+
+export interface ExerciseItem {
+  id: string;
+  category: ExerciseCategory;
+  categoryLabel: string;
+  title: string;
+  description: string;
+  durationMinutes: number;
+  intensity: 'low' | 'medium' | 'high';
+}

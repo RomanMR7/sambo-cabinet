@@ -167,8 +167,13 @@ export const DevelopmentView: React.FC = () => {
           </div>
 
           {/* Cards of S/3S per athlete and skill */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {skillChecks.map(sc => {
+          {skillChecks.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
+              Записи проверок навыков отсутствуют.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {skillChecks.map(sc => {
               const athlete = athletes.find(a => a.id === sc.athleteId);
               const evaluation = evaluateS3Rule(sc.checks);
 
@@ -279,6 +284,7 @@ export const DevelopmentView: React.FC = () => {
               );
             })}
           </div>
+        )}
         </div>
       )}
 
@@ -327,55 +333,61 @@ export const DevelopmentView: React.FC = () => {
       {/* TAB 3: TASKS */}
       {activeTab === 'tasks' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tasks.map(t => {
-              const athlete = athletes.find(a => a.id === t.athleteId);
-              return (
-                <div key={t.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-xs font-bold text-slate-500">
-                        {athlete?.shortName} • Навык: {t.skillTitle}
+          {tasks.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
+              Индивидуальные задачи отсутствуют.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tasks.map(t => {
+                const athlete = athletes.find(a => a.id === t.athleteId);
+                return (
+                  <div key={t.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-slate-500">
+                          {athlete?.shortName} • Навык: {t.skillTitle}
+                        </div>
+                        <h3 className="font-bold text-slate-900 text-sm mt-0.5">{t.exerciseTitle}</h3>
                       </div>
-                      <h3 className="font-bold text-slate-900 text-sm mt-0.5">{t.exerciseTitle}</h3>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+                        t.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {t.status === 'completed' ? 'Зачтено' : 'В работе'}
+                      </span>
                     </div>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                      t.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {t.status === 'completed' ? 'Зачтено' : 'В работе'}
-                    </span>
-                  </div>
 
-                  <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <div><span className="font-semibold text-slate-700">Наблюдение: </span>{t.observation}</div>
-                    <div className="mt-1 text-slate-500">Срок: {t.deadline}</div>
-                    {t.coachFeedback && (
-                      <div className="mt-1.5 pt-1.5 border-t border-slate-200 font-medium text-emerald-800">
-                        Отзыв: {t.coachFeedback}
-                      </div>
-                    )}
-                  </div>
+                    <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <div><span className="font-semibold text-slate-700">Наблюдение: </span>{t.observation}</div>
+                      <div className="mt-1 text-slate-500">Срок: {t.deadline}</div>
+                      {t.coachFeedback && (
+                        <div className="mt-1.5 pt-1.5 border-t border-slate-200 font-medium text-emerald-800">
+                          Отзыв: {t.coachFeedback}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-slate-400">
-                      {t.publishedToFamily ? '✓ Опубликовано родителям' : 'Внутренняя заметка'}
-                    </span>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] text-slate-400">
+                        {t.publishedToFamily ? '✓ Опубликовано родителям' : 'Внутренняя заметка'}
+                      </span>
 
-                    <button
-                      onClick={() => toggleTaskStatus(t.id, t.status === 'completed' ? 'active' : 'completed')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        t.status === 'completed'
-                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                      }`}
-                    >
-                      {t.status === 'completed' ? 'Вернуть в работу' : 'Зачесть выполнение'}
-                    </button>
+                      <button
+                        onClick={() => toggleTaskStatus(t.id, t.status === 'completed' ? 'active' : 'completed')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                          t.status === 'completed'
+                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                        }`}
+                      >
+                        {t.status === 'completed' ? 'Вернуть в работу' : 'Зачесть выполнение'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -401,22 +413,28 @@ export const DevelopmentView: React.FC = () => {
             <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
               <h3 className="font-extrabold text-slate-900 text-base">Журнал взвешиваний</h3>
               <div className="divide-y divide-slate-100">
-                {weights.map(w => {
-                  const athlete = athletes.find(a => a.id === w.athleteId);
-                  return (
-                    <div key={w.id} className="py-3.5 flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-sm text-slate-900">
-                          {athlete?.shortName} • {w.date}
+                {weights.length === 0 ? (
+                  <div className="py-8 text-center text-slate-500 text-xs">
+                    Записи взвешиваний отсутствуют.
+                  </div>
+                ) : (
+                  weights.map(w => {
+                    const athlete = athletes.find(a => a.id === w.athleteId);
+                    return (
+                      <div key={w.id} className="py-3.5 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-sm text-slate-900">
+                            {athlete?.shortName} • {w.date}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">{w.context}</div>
                         </div>
-                        <div className="text-xs text-slate-500 mt-0.5">{w.context}</div>
+                        <div className="text-base font-black text-slate-900 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
+                          {w.weightKg} кг
+                        </div>
                       </div>
-                      <div className="text-base font-black text-slate-900 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
-                        {w.weightKg} кг
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
 

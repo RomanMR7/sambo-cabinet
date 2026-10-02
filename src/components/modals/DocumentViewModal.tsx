@@ -1,6 +1,7 @@
 import React from 'react';
+import { useApp } from '../../context/AppContext';
 import { DocumentRecord } from '../../types';
-import { X, FileText, CheckCircle2, AlertTriangle, ShieldCheck, Download, Calendar, User } from 'lucide-react';
+import { X, FileText, CheckCircle2, AlertTriangle, ShieldCheck, Download, Calendar, User, Lock } from 'lucide-react';
 
 interface Props {
   document: DocumentRecord | null;
@@ -9,7 +10,42 @@ interface Props {
 }
 
 export const DocumentViewModal: React.FC<Props> = ({ document, onClose, athleteName }) => {
+  const { role } = useApp();
   if (!document) return null;
+
+  const isRestrictedForAdmin = role === 'admin' && (document.isRestrictedMedical || document.type === 'medical');
+
+  if (isRestrictedForAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-red-200 overflow-hidden flex flex-col p-6 space-y-4">
+          <div className="flex items-center gap-3 text-red-600">
+            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900">Доступ заблокирован (152-ФЗ)</h3>
+              <p className="text-xs text-red-600 font-semibold">Врачебная тайна и защита персональных данных</p>
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-950 leading-relaxed">
+            <span className="font-bold">Системное ограничение матрицы доступа: </span>
+            У роли <span className="font-bold">Администратор</span> отсутствует медицинский допуск. Доступ к копиям и сканам медицинских справок строго запрещен законодательством о защите персональных данных (152-ФЗ).
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const isVerified = document.verificationStatus === 'verified';
   const hasRemarks = document.verificationStatus === 'has_remarks';

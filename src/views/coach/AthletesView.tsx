@@ -1,17 +1,47 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AthleteDetailView } from './AthleteDetailView';
-import { Search, Clock, XCircle, ArrowRight, CheckCircle2, UserPlus, Users } from 'lucide-react';
+import {
+  Search,
+  Clock,
+  XCircle,
+  ArrowRight,
+  CheckCircle2,
+  UserPlus,
+  Users,
+  Settings,
+  Filter
+} from 'lucide-react';
 import { AddAthleteModal } from '../../components/modals/AddAthleteModal';
+import { EditGroupModal } from '../../components/modals/EditGroupModal';
 
 export const AthletesView: React.FC = () => {
-  const { athletes, selectedAthleteId, setSelectedAthleteId } = useApp();
+  const {
+    athletes,
+    selectedAthleteId,
+    setSelectedAthleteId,
+    groups,
+    selectedGroupId,
+    setSelectedGroupId
+  } = useApp();
+
   const [showDetail, setShowDetail] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'admitted' | 'pending' | 'not_admitted'>('all');
   const [isAddAthleteOpen, setIsAddAthleteOpen] = useState(false);
+  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+
+  const currentGroup = groups.find(g => g.id === selectedGroupId) || groups[0];
 
   const filteredAthletes = athletes.filter(a => {
+    // Only active athletes
+    if (!a.isActive) return false;
+
+    // Filter by group
+    if (selectedGroupId && selectedGroupId !== 'all' && a.groupId !== selectedGroupId) {
+      return false;
+    }
+
     const matchesSearch =
       a.fullName.toLowerCase().includes(search.toLowerCase()) ||
       a.shortName.toLowerCase().includes(search.toLowerCase());
@@ -30,9 +60,12 @@ export const AthletesView: React.FC = () => {
     return <AthleteDetailView onBack={() => setShowDetail(false)} />;
   }
 
-  const admittedCount = athletes.filter(a => a.admissionDecision.status === 'admitted').length;
-  const pendingCount = athletes.filter(a => a.admissionDecision.status === 'pending').length;
-  const notAdmittedCount = athletes.filter(a => a.admissionDecision.status === 'not_admitted').length;
+  const activeAthletesInScope = athletes.filter(
+    a => a.isActive && (selectedGroupId === 'all' || !selectedGroupId || a.groupId === selectedGroupId)
+  );
+  const admittedCount = activeAthletesInScope.filter(a => a.admissionDecision.status === 'admitted').length;
+  const pendingCount = activeAthletesInScope.filter(a => a.admissionDecision.status === 'pending').length;
+  const notAdmittedCount = activeAthletesInScope.filter(a => a.admissionDecision.status === 'not_admitted').length;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -41,17 +74,25 @@ export const AthletesView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-red-600 uppercase tracking-wider">
             <Users className="w-3.5 h-3.5" />
-            <span>Состав группы</span>
+            <span>Состав группы и допуски</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-            Спортсмены группы
+            {selectedGroupId === 'all' ? 'Все спортсмены школы' : currentGroup?.name || 'Спортсмены группы'}
           </h1>
           <p className="text-sm text-slate-500 font-medium">
-            Группа 1 • {athletes.length} спортсменов в активном списке
+            Тренер: {currentGroup?.coachName || 'Иванов А. В.'} • {activeAthletesInScope.length} спортсменов в активном составе
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsEditGroupOpen(true)}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+          >
+            <Settings className="w-4 h-4 text-slate-300" />
+            <span>Настроить группу</span>
+          </button>
+
           <button
             onClick={() => setIsAddAthleteOpen(true)}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition flex items-center gap-1.5"
@@ -64,48 +105,68 @@ export const AthletesView: React.FC = () => {
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
-        {/* Status Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-              statusFilter === 'all'
-                ? 'bg-slate-900 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Все ({athletes.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('admitted')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-              statusFilter === 'admitted'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Допущены ({admittedCount})
-          </button>
-          <button
-            onClick={() => setStatusFilter('pending')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-              statusFilter === 'pending'
-                ? 'bg-amber-500 text-slate-950 font-black'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Ожидают ({pendingCount})
-          </button>
-          <button
-            onClick={() => setStatusFilter('not_admitted')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-              statusFilter === 'not_admitted'
-                ? 'bg-red-600 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Не допущены ({notAdmittedCount})
-          </button>
+        {/* Group Selector & Status Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Group dropdown */}
+          <div className="flex items-center gap-1.5 mr-2">
+            <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <select
+              value={selectedGroupId}
+              onChange={e => setSelectedGroupId(e.target.value)}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-800 border-none focus:ring-2 focus:ring-red-500/20"
+            >
+              <option value="all">Все группы клуба</option>
+              {groups.map(g => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status buttons */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                statusFilter === 'all'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Все ({activeAthletesInScope.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('admitted')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                statusFilter === 'admitted'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Допущены ({admittedCount})
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                statusFilter === 'pending'
+                  ? 'bg-amber-500 text-slate-950 font-black'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Ожидают ({pendingCount})
+            </button>
+            <button
+              onClick={() => setStatusFilter('not_admitted')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                statusFilter === 'not_admitted'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Не допущены ({notAdmittedCount})
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -131,6 +192,7 @@ export const AthletesView: React.FC = () => {
           {filteredAthletes.map(athlete => {
             const isSelected = athlete.id === selectedAthleteId;
             const status = athlete.admissionDecision.status;
+            const groupName = groups.find(g => g.id === athlete.groupId)?.name || 'Группа 1';
 
             return (
               <div
@@ -151,7 +213,7 @@ export const AthletesView: React.FC = () => {
                       </h3>
                       <p className="text-xs text-slate-500">{athlete.fullName}</p>
                       <span className="inline-block text-[10px] font-semibold text-slate-400 mt-0.5">
-                        {athlete.groupId === 'grp-1' ? 'Группа 1' : 'Группа 2'}
+                        {groupName}
                       </span>
                     </div>
                   </div>
@@ -195,6 +257,14 @@ export const AthletesView: React.FC = () => {
             );
           })}
         </div>
+      )}
+
+      {/* Edit Group Modal */}
+      {isEditGroupOpen && (
+        <EditGroupModal
+          groupId={selectedGroupId && selectedGroupId !== 'all' ? selectedGroupId : groups[0]?.id}
+          onClose={() => setIsEditGroupOpen(false)}
+        />
       )}
 
       {/* Add Athlete Modal */}

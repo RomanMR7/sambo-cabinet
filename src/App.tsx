@@ -10,6 +10,7 @@ import { DevelopmentView } from './views/coach/DevelopmentView';
 import { CompetitionsView } from './views/coach/CompetitionsView';
 import { DocumentsView } from './views/coach/DocumentsView';
 import { ReportsView } from './views/coach/ReportsView';
+import { TrainingPlansView } from './views/coach/TrainingPlansView';
 import { VerifierView } from './views/verifier/VerifierView';
 import { ParentView } from './views/parent/ParentView';
 import { AthleteView } from './views/athlete/AthleteView';
@@ -39,6 +40,8 @@ export const App: React.FC = () => {
         return <AthletesView />;
       case 'athlete_detail':
         return <AthleteDetailView />;
+      case 'training_plans':
+        return <TrainingPlansView />;
       case 'sessions':
         return <SessionView />;
       case 'development':

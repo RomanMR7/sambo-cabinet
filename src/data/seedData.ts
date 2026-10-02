@@ -9,7 +9,9 @@ import {
   VideoNote,
   Competition,
   GroupInfo,
-  ScheduleSlot
+  ScheduleSlot,
+  ClubUser,
+  ExerciseItem
 } from '../types';
 
 export const initialAthletes: Athlete[] = [
@@ -107,6 +109,101 @@ export const initialAthletes: Athlete[] = [
     parentName: 'Елена Николаева',
     parentPhone: '+7 (999) 555-66-77',
     athletePhone: '+7 (999) 555-66-78'
+  },
+  {
+    id: 'ath-6',
+    fullName: 'Егор Морозов',
+    shortName: 'Егор М.',
+    groupId: 'grp-2',
+    avatarInitials: 'ЕМ',
+    isActive: true,
+    birthDate: '2014-07-19',
+    admissionDecision: {
+      status: 'admitted',
+      basis: 'Медицинский допуск получен',
+      reviewedAt: '2026-09-18',
+      reviewedBy: 'Петров С. Н.',
+      validUntil: '2026-12-31'
+    },
+    parentName: 'Анна Морозова',
+    parentPhone: '+7 (999) 666-77-88',
+    athletePhone: '+7 (999) 666-77-89'
+  },
+  {
+    id: 'ath-7',
+    fullName: 'Артём Соколов',
+    shortName: 'Артём С.',
+    groupId: 'grp-2',
+    avatarInitials: 'АС',
+    isActive: true,
+    birthDate: '2013-09-14',
+    admissionDecision: {
+      status: 'admitted',
+      basis: 'Полный пакет документов',
+      reviewedAt: '2026-09-10',
+      reviewedBy: 'Петров С. Н.',
+      validUntil: '2027-01-15'
+    },
+    parentName: 'Дмитрий Соколов',
+    parentPhone: '+7 (999) 777-88-99',
+    athletePhone: '+7 (999) 777-88-00'
+  },
+  {
+    id: 'ath-8',
+    fullName: 'Илья Федоров',
+    shortName: 'Илья Ф.',
+    groupId: 'grp-3',
+    avatarInitials: 'ИФ',
+    isActive: true,
+    birthDate: '2012-04-05',
+    admissionDecision: {
+      status: 'admitted',
+      basis: 'УМО пройдено',
+      reviewedAt: '2026-08-25',
+      reviewedBy: 'Иванов А. В.',
+      validUntil: '2026-12-25'
+    },
+    parentName: 'Татьяна Федорова',
+    parentPhone: '+7 (999) 888-99-00',
+    athletePhone: '+7 (999) 888-99-11'
+  },
+  {
+    id: 'ath-9',
+    fullName: 'Матвей Попов',
+    shortName: 'Матвей П.',
+    groupId: 'grp-1',
+    avatarInitials: 'МП',
+    isActive: true,
+    birthDate: '2014-12-01',
+    admissionDecision: {
+      status: 'pending',
+      basis: 'Ожидает полис ОМС',
+      reviewedAt: '2026-10-02',
+      reviewedBy: 'Иванов А. В.',
+      validUntil: '2026-10-16'
+    },
+    parentName: 'Олег Попов',
+    parentPhone: '+7 (999) 999-00-11',
+    athletePhone: '+7 (999) 999-00-22'
+  },
+  {
+    id: 'ath-10',
+    fullName: 'София Лебедева',
+    shortName: 'София Л.',
+    groupId: 'grp-3',
+    avatarInitials: 'СЛ',
+    isActive: true,
+    birthDate: '2013-06-30',
+    admissionDecision: {
+      status: 'admitted',
+      basis: 'Допущена к стартам',
+      reviewedAt: '2026-09-05',
+      reviewedBy: 'Иванов А. В.',
+      validUntil: '2027-02-01'
+    },
+    parentName: 'Марина Лебедева',
+    parentPhone: '+7 (999) 123-45-67',
+    athletePhone: '+7 (999) 123-45-68'
   }
 ];
 
@@ -537,14 +634,243 @@ export const initialCompetitions: Competition[] = [
 
 export const initialGroupInfo: GroupInfo = {
   id: 'grp-1',
-  name: 'Группа 1',
-  coachName: 'Тренер 1 (Иванов А. В.)',
+  name: 'Группа 1 (Начальная подготовка)',
+  coachName: 'Иванов А. В.',
   schedule: 'Вт, Чт 18:00–19:00',
-  athleteCount: 24
+  athleteCount: 4
 };
+
+export const initialGroups: GroupInfo[] = [
+  {
+    id: 'grp-1',
+    name: 'Группа 1 (Начальная подготовка)',
+    coachName: 'Иванов А. В.',
+    schedule: 'Вт, Чт 18:00–19:00',
+    athleteCount: 4
+  },
+  {
+    id: 'grp-2',
+    name: 'Группа 2 (Учебно-тренировочная)',
+    coachName: 'Петров С. Н.',
+    schedule: 'Пн, Ср, Пт 17:00–18:30',
+    athleteCount: 3
+  },
+  {
+    id: 'grp-3',
+    name: 'Группа 3 (Спортивное совершенствование)',
+    coachName: 'Иванов А. В.',
+    schedule: 'Пн, Ср, Пт 19:00–21:00',
+    athleteCount: 3
+  }
+];
+
+export const initialClubUsers: ClubUser[] = [
+  {
+    id: 'usr-1',
+    fullName: 'Михайлов Дмитрий Павлович',
+    role: 'admin',
+    phone: '+7 (999) 001-11-22',
+    email: 'd.mikhailov@sambo-club.ru',
+    title: 'Администратор школы самбо',
+    isHeadManager: true,
+    isVerifierAssigned: false
+  },
+  {
+    id: 'usr-2',
+    fullName: 'Иванов Алексей Васильевич',
+    role: 'coach',
+    phone: '+7 (999) 002-33-44',
+    email: 'a.ivanov@sambo-club.ru',
+    title: 'Старший тренер, Мастер спорта России',
+    isHeadManager: false,
+    isVerifierAssigned: false
+  },
+  {
+    id: 'usr-3',
+    fullName: 'Смирнова Вероника Александровна',
+    role: 'verifier',
+    phone: '+7 (999) 003-55-66',
+    email: 'v.smirnova@sambo-club.ru',
+    title: 'Спортивный врач, контролёр медкомиссии',
+    isHeadManager: false,
+    isVerifierAssigned: true
+  },
+  {
+    id: 'usr-4',
+    fullName: 'Петров Сергей Николаевич',
+    role: 'coach',
+    phone: '+7 (999) 004-77-88',
+    email: 's.petrov@sambo-club.ru',
+    title: 'Тренер юношеских групп, КМС по самбо',
+    isHeadManager: false,
+    isVerifierAssigned: false
+  },
+  {
+    id: 'usr-5',
+    fullName: 'Кузнецов Роман Викторович',
+    role: 'admin',
+    phone: '+7 (999) 005-99-00',
+    email: 'r.kuznetsov@sambo-club.ru',
+    title: 'Зам. директора по спортивной работе',
+    isHeadManager: false,
+    isVerifierAssigned: false
+  }
+];
+
+export const initialExercises: ExerciseItem[] = [
+  // Разминка
+  {
+    id: 'ex-1',
+    category: 'warmup',
+    categoryLabel: 'Разминка',
+    title: 'Специальная самбистская разминка и страховка',
+    description: 'Перекаты, самостраховка при падениях (на бок, спину, через плечо), борцовский мост и забегания на голове.',
+    durationMinutes: 15,
+    intensity: 'medium'
+  },
+  {
+    id: 'ex-2',
+    category: 'warmup',
+    categoryLabel: 'Разминка',
+    title: 'Акробатика на ковре и кувырки через препятствия',
+    description: 'Кувырки вперед/назад в парах, колесо, полет-кувырок через партнера, перевороты на татами.',
+    durationMinutes: 10,
+    intensity: 'medium'
+  },
+  {
+    id: 'ex-3',
+    category: 'warmup',
+    categoryLabel: 'Разминка',
+    title: 'Суставная гимнастика и растяжка связок',
+    description: 'Вращения в плечевых, локтевых и коленных суставах, растяжка паховых связок и позвоночника.',
+    durationMinutes: 10,
+    intensity: 'low'
+  },
+  // Приёмы и броски
+  {
+    id: 'ex-4',
+    category: 'throws',
+    categoryLabel: 'Приёмы и броски',
+    title: 'Бросок через бедро (О-госи) с плотным поясом',
+    description: 'Отработка входа в бросок, подворот таза ниже центра тяжести соперника, сброс с фиксацией руки.',
+    durationMinutes: 20,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-5',
+    category: 'throws',
+    categoryLabel: 'Приёмы и броски',
+    title: 'Передняя подножка (Тай-отоси)',
+    description: 'Срыв захвата, выставление атакующей ноги, скручивание плечевого пояса партнера по дуге.',
+    durationMinutes: 20,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-6',
+    category: 'throws',
+    categoryLabel: 'Приёмы и броски',
+    title: 'Задняя подножка (О-сото-гари)',
+    description: 'Захват отворота и рукава, загрузка опорной ноги оппонента, мощный подбив с толчком грудью.',
+    durationMinutes: 15,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-7',
+    category: 'throws',
+    categoryLabel: 'Приёмы и броски',
+    title: 'Бросок через спину с колен (Сэойнагэ)',
+    description: 'Быстрый подсед на два колена под центр тяжести, плотная фиксация руки на плече, амплитудный сброс.',
+    durationMinutes: 20,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-8',
+    category: 'throws',
+    categoryLabel: 'Приёмы и броски',
+    title: 'Подхват под две ноги (Харай-госи)',
+    description: 'Выведение из равновесия на носки, мах ногой с одновременной тягой обеими руками вперед-вниз.',
+    durationMinutes: 20,
+    intensity: 'high'
+  },
+  // Партер
+  {
+    id: 'ex-9',
+    category: 'groundwork',
+    categoryLabel: 'Борьба в партере',
+    title: 'Удержание сбоку (Хон-кэса-гатамэ)',
+    description: 'Плотный захват шеи и руки соперника, опора на широко расставленные ноги, распределение массы.',
+    durationMinutes: 15,
+    intensity: 'medium'
+  },
+  {
+    id: 'ex-10',
+    category: 'groundwork',
+    categoryLabel: 'Борьба в партере',
+    title: 'Болевой приём: рычаг локтя через бедро',
+    description: 'Переход на руку из удержания сбоку, фиксация запястья двумя руками, перегиб локтевого сустава.',
+    durationMinutes: 20,
+    intensity: 'medium'
+  },
+  {
+    id: 'ex-11',
+    category: 'groundwork',
+    categoryLabel: 'Борьба в партере',
+    title: 'Удержание поперек (Йоко-сихо-гатамэ)',
+    description: 'Контроль пояса и дальней руки партнера, прижим грудью, блокировка попыток переворота мостом.',
+    durationMinutes: 15,
+    intensity: 'medium'
+  },
+  {
+    id: 'ex-12',
+    category: 'groundwork',
+    categoryLabel: 'Борьба в партере',
+    title: 'Учебно-тренировочные схватки в партере',
+    description: 'Отработка переходов от защиты к атакующим действиям и болевым приемам по 3 минуты в парах.',
+    durationMinutes: 20,
+    intensity: 'high'
+  },
+  // СФП
+  {
+    id: 'ex-13',
+    category: 'sfp',
+    categoryLabel: 'СФП и ОФП',
+    title: 'Отработка входов в приёмы с борцовской резиной',
+    description: 'Имитация подворотов на броски через бедро и спину с резиновым эспандером на скорость и взрыв.',
+    durationMinutes: 15,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-14',
+    category: 'sfp',
+    categoryLabel: 'СФП и ОФП',
+    title: 'Круговая силовая подготовка борца',
+    description: 'Подтягивания на куртках самбо (хват за отвороты), отжимания на кулаках, приседания с партнером.',
+    durationMinutes: 20,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-15',
+    category: 'sfp',
+    categoryLabel: 'СФП и ОФП',
+    title: 'Челночный бег и спурты на ковре',
+    description: 'Развитие анаэробной выносливости для финальных минут соревновательных схваток.',
+    durationMinutes: 15,
+    intensity: 'high'
+  },
+  {
+    id: 'ex-16',
+    category: 'sfp',
+    categoryLabel: 'СФП и ОФП',
+    title: 'Заминка, растяжка и дыхательное восстановление',
+    description: 'Плавное снижение частоты пульса, расслабление мышц спины и шеи, статические асаны на растяжку.',
+    durationMinutes: 10,
+    intensity: 'low'
+  }
+];
 
 export const initialScheduleSlots: ScheduleSlot[] = [
   { id: 'sch-1', day: 'Вторник', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
   { id: 'sch-2', day: 'Четверг', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
   { id: 'sch-3', day: 'Суббота', time: '10:00–11:30', hall: 'Зал самбо №2', coach: 'Иванов А. В.', group: 'Группа 1 (ОФП)' },
 ];
+

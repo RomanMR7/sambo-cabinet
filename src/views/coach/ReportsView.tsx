@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { calculateFourWeekAttendance, FourWeekReportRow } from '../../utils/rules';
+import { calculateFourWeekAttendance, FourWeekReportRow, generateAttendanceCSV } from '../../utils/rules';
 import {
   BarChart3,
   Download,
@@ -8,7 +8,8 @@ import {
   AlertCircle,
   Trophy,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 
 export const ReportsView: React.FC = () => {
@@ -17,31 +18,7 @@ export const ReportsView: React.FC = () => {
   const reportRows: FourWeekReportRow[] = calculateFourWeekAttendance(athletes, sessions);
 
   const handleExportCSV = () => {
-    const headers = [
-      'Спортсмен',
-      'Всего занятий',
-      'Уважительных (исключено)',
-      'Эффективная база E',
-      'Присутствовал',
-      'Пропусков',
-      'Не отмечено',
-      'Доля посещений (%)',
-      'Итоговое место'
-    ];
-
-    const csvLines = reportRows.map(r => [
-      `"${r.athlete.fullName}"`,
-      r.totalSessions,
-      r.excusedCount,
-      r.effectiveBaseE,
-      r.presentCount,
-      r.absentCount,
-      r.unmarkedCount,
-      `${r.ratePercent}%`,
-      `"${r.rankText}"`
-    ].join(';'));
-
-    const csvContent = '\uFEFF' + [headers.join(';'), ...csvLines].join('\r\n');
+    const csvContent = generateAttendanceCSV(reportRows);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -146,8 +123,16 @@ export const ReportsView: React.FC = () => {
           </span>
         </div>
 
-        {/* Mobile View: Cards (shown on phones) */}
-        <div className="sm:hidden divide-y divide-slate-100">
+        {reportRows.length === 0 ? (
+          <div className="p-8 text-center text-slate-500">
+            <Calendar className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+            <p className="font-medium text-sm">Данные о посещаемости отсутствуют</p>
+            <p className="text-xs text-slate-400 mt-1">В группе нет спортсменов или проведенных тренировок за последние 4 недели</p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile View: Cards (shown on phones) */}
+            <div className="sm:hidden divide-y divide-slate-100">
           {reportRows.map(row => {
             const isFirst = row.rankNumber === 1;
             const isThird = row.rankNumber === 3;
@@ -345,6 +330,8 @@ export const ReportsView: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </>
+    )}
 
         {/* Footer Notes (Slide 12) */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">

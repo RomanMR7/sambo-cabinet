@@ -41,7 +41,7 @@ export const ParentView: React.FC = () => {
 
   // Next session
   const nextSession = sessions.find(s => s.id === 'ses-next') || sessions[sessions.length - 1];
-  const childNextAttendance = nextSession ? (nextSession.attendance[child.id] || 'present') : 'present';
+  const childNextAttendance = nextSession ? ((nextSession.attendance && nextSession.attendance[child.id]) || 'present') : 'present';
 
   // 4-week rule attendance calculation for child
   const attendanceReport = calculateFourWeekAttendance(athletes, sessions);
@@ -382,9 +382,14 @@ export const ParentView: React.FC = () => {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {sessions.map(s => {
-                const status = s.attendance[child.id] || 'unmarked';
-                const excReason = s.exceptions[child.id];
+              {sessions.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-sm">
+                  История занятий группы пуста.
+                </div>
+              ) : (
+                sessions.map(s => {
+                  const status = (s.attendance && s.attendance[child.id]) || 'unmarked';
+                  const excReason = s.exceptions && s.exceptions[child.id];
 
                 return (
                   <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 transition">
@@ -425,7 +430,8 @@ export const ParentView: React.FC = () => {
                     </div>
                   </div>
                 );
-              })}
+              })
+            )}
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Settings,
   HeartHandshake,
+  BookOpen,
   X
 } from 'lucide-react';
 
@@ -23,16 +24,30 @@ interface Props {
 }
 
 export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
-  const { role, activeNav, setActiveNav, documents } = useApp();
+  const { role, activeNav, setActiveNav, documents, clubUsers } = useApp();
 
   // Pending docs count for verifier badge
   const pendingDocsCount = documents.filter(d => d.verificationStatus === 'unverified').length;
+
+  const headManager =
+    clubUsers?.find(u => u.isHeadManager) ||
+    clubUsers?.find(u => u.role === 'admin');
+
+  const adminName = headManager?.fullName || 'Михайлов Д. П.';
+  const adminTitle = headManager?.title || 'Администратор школы';
+  const adminInitials = headManager
+    ? headManager.fullName
+        .split(' ')
+        .map(p => p[0])
+        .slice(0, 2)
+        .join('')
+    : 'ДМ';
 
   const userProfiles: Record<string, { name: string; title: string; initials: string; badge: string }> = {
     coach: { name: 'Иванов А. В.', title: 'Старший тренер', initials: 'АИ', badge: 'Тренер Группы 1' },
     athlete: { name: 'Антон Кузнецов', title: 'Спортсмен (12 лет)', initials: 'АК', badge: 'Группа 1 • -42 кг' },
     parent: { name: 'Ольга Кузнецова', title: 'Родитель спортсмена', initials: 'ОК', badge: 'Мама Антона К.' },
-    admin: { name: 'Михайлов Д. П.', title: 'Администратор школы', initials: 'ДМ', badge: 'Управление клубом' },
+    admin: { name: adminName, title: adminTitle, initials: adminInitials, badge: 'Управляющий клуба' },
     verifier: { name: 'Смирнова В. А.', title: 'Служба верификации', initials: 'ВС', badge: 'Медконтроль и полисы' },
   };
 
@@ -44,6 +59,7 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
         return [
           { id: 'today', label: 'Сегодня', icon: Calendar },
           { id: 'athletes', label: 'Спортсмены', icon: Users },
+          { id: 'training_plans', label: 'Планы тренировок', icon: BookOpen },
           { id: 'sessions', label: 'Занятия', icon: Dumbbell },
           { id: 'development', label: 'Развитие', icon: Award },
           { id: 'competitions', label: 'Соревнования', icon: Trophy },
