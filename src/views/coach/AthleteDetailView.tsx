@@ -18,6 +18,8 @@ import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 import { UploadDocumentModal } from '../../components/modals/UploadDocumentModal';
 import { AdmissionDecisionModal } from '../../components/modals/AdmissionDecisionModal';
 import { ObservationTaskModal } from '../../components/modals/ObservationTaskModal';
+import { EditAthleteModal } from '../../components/modals/EditAthleteModal';
+import { AddWeightModal } from '../../components/modals/AddWeightModal';
 
 interface Props {
   onBack?: () => void;
@@ -49,6 +51,8 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isDecisionOpen, setIsDecisionOpen] = useState(false);
   const [isObservationOpen, setIsObservationOpen] = useState(false);
+  const [isEditAthleteOpen, setIsEditAthleteOpen] = useState(false);
+  const [isAddWeightOpen, setIsAddWeightOpen] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   const showNotification = (msg: string) => {
@@ -114,7 +118,7 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => showNotification(`Данные спортсмена ${athlete.shortName} сохранены в профиле.`)}
+            onClick={() => setIsEditAthleteOpen(true)}
             className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
           >
             Редактировать
@@ -365,13 +369,20 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
           {/* TAB CONTENT: TESTS & WEIGHT */}
           {activeTab === 'tests' && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-extrabold text-slate-900 text-base">Дневник веса (этический формат)</h3>
                   <p className="text-xs text-slate-500">
                     Строго дата, числовое значение в кг и нейтральный контекст (без диет и оценок)
                   </p>
                 </div>
+                <button
+                  onClick={() => setIsAddWeightOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Внести вес</span>
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -554,6 +565,23 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
         <ObservationTaskModal
           athleteId={athlete.id}
           onClose={() => setIsObservationOpen(false)}
+        />
+      )}
+
+      {isEditAthleteOpen && (
+        <EditAthleteModal
+          athlete={athlete}
+          onClose={() => setIsEditAthleteOpen(false)}
+          onSaved={() => showNotification('Данные спортсмена успешно сохранены!')}
+        />
+      )}
+
+      {isAddWeightOpen && (
+        <AddWeightModal
+          athleteId={athlete.id}
+          athleteName={athlete.fullName}
+          onClose={() => setIsAddWeightOpen(false)}
+          onSaved={() => showNotification('Запись веса добавлена в дневник!')}
         />
       )}
     </div>

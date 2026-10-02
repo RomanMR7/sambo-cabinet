@@ -1,24 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Trophy, Calendar, MapPin, CheckCircle2, Clock, Users } from 'lucide-react';
+import { Trophy, Calendar, MapPin, CheckCircle2, Clock, Users, Plus } from 'lucide-react';
+import { AddCompetitionModal } from '../../components/modals/AddCompetitionModal';
 
 export const CompetitionsView: React.FC = () => {
   const { competitions, athletes, setSelectedAthleteId, setActiveNav } = useApp();
+  const [isAddCompOpen, setIsAddCompOpen] = useState(false);
 
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs font-bold text-red-600 uppercase tracking-wider">
-          <Trophy className="w-3.5 h-3.5" />
-          <span>Календарный план</span>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold text-red-600 uppercase tracking-wider">
+            <Trophy className="w-3.5 h-3.5" />
+            <span>Календарный план</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+            Соревнования и Турниры
+          </h1>
+          <p className="text-sm text-slate-500 font-medium">
+            Заявки • Допуски участников • Весовые категории
+          </p>
         </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-          Соревнования и Турниры
-        </h1>
-        <p className="text-sm text-slate-500 font-medium">
-          Заявки • Допуски участников • Весовые категории
-        </p>
+
+        <button
+          onClick={() => setIsAddCompOpen(true)}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+        >
+          <Plus className="w-4 h-4" />
+          <span>+ Добавить соревнование</span>
+        </button>
       </div>
 
       <div className="space-y-6">
@@ -100,6 +112,10 @@ export const CompetitionsView: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {isAddCompOpen && (
+        <AddCompetitionModal onClose={() => setIsAddCompOpen(false)} />
+      )}
     </div>
   );
 };

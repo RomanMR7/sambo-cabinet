@@ -64,6 +64,11 @@ interface AppContextType extends AppState {
   addWeight: (weight: Omit<WeightRecord, 'id'>) => void;
   addVideoNote: (note: Omit<VideoNote, 'id' | 'createdAt'>) => void;
   addSessionNote: (sessionId: string, athleteId: string, noteText: string) => void;
+  updateAthlete: (athleteId: string, data: Partial<Athlete>) => void;
+  addAthlete: (athlete: Omit<Athlete, 'id' | 'avatarInitials'>) => void;
+  updateGroupInfo: (info: Partial<GroupInfo>) => void;
+  addCompetition: (comp: Omit<Competition, 'id'>) => void;
+  addCompetitionParticipant: (competitionId: string, athleteId: string, category: string, nextGoal?: string) => void;
   resetToDemo: () => void;
 }
 
@@ -403,6 +408,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const updateAthlete = (athleteId: string, data: Partial<Athlete>) => {
+    setState(prev => ({
+      ...prev,
+      athletes: prev.athletes.map(a => (a.id === athleteId ? { ...a, ...data } : a))
+    }));
+  };
+
+  const addAthlete = (athleteData: Omit<Athlete, 'id' | 'avatarInitials'>) => {
+    const parts = athleteData.fullName.trim().split(/\s+/);
+    const initials = parts.map(p => p[0]?.toUpperCase() || '').slice(0, 2).join('') || 'СА';
+    const newAthlete: Athlete = {
+      ...athleteData,
+      id: `ath-${Date.now()}`,
+      avatarInitials: initials
+    };
+    setState(prev => ({
+      ...prev,
+      athletes: [...prev.athletes, newAthlete],
+      groupInfo: {
+        ...prev.groupInfo,
+        athleteCount: prev.groupInfo.athleteCount + 1
+      }
+    }));
+  };
+
+  const updateGroupInfo = (info: Partial<GroupInfo>) => {
+    setState(prev => ({
+      ...prev,
+      groupInfo: {
+        ...prev.groupInfo,
+        ...info
+      }
+    }));
+  };
+
+  const addCompetition = (compData: Omit<Competition, 'id'>) => {
+    const newComp: Competition = {
+      ...compData,
+      id: `cmp-${Date.now()}`
+    };
+    setState(prev => ({
+      ...prev,
+      competitions: [...prev.competitions, newComp]
+    }));
+  };
+
+  const addCompetitionParticipant = (
+    competitionId: string,
+    athleteId: string,
+    category: string,
+    nextGoal?: string
+  ) => {
+    setState(prev => ({
+      ...prev,
+      competitions: prev.competitions.map(c => {
+        if (c.id === competitionId) {
+          const exists = c.participants.some(p => p.athleteId === athleteId);
+          if (exists) return c;
+          const athlete = prev.athletes.find(a => a.id === athleteId);
+          return {
+            ...c,
+            participants: [
+              ...c.participants,
+              {
+                athleteId,
+                category,
+                admissionDecision: athlete?.admissionDecision.status || 'pending',
+                nextGoal
+              }
+            ]
+          };
+        }
+        return c;
+      })
+    }));
+  };
+
   const resetToDemo = () => {
     localStorage.removeItem(STORAGE_KEY);
     setState({
@@ -443,6 +525,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addWeight,
         addVideoNote,
         addSessionNote,
+        updateAthlete,
+        addAthlete,
+        updateGroupInfo,
+        addCompetition,
+        addCompetitionParticipant,
         resetToDemo
       }}
     >

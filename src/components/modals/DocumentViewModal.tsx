@@ -115,7 +115,18 @@ export const DocumentViewModal: React.FC<Props> = ({ document, onClose, athleteN
 
             <div className="mt-5">
               <button
-                onClick={() => alert(`Загрузка копии ${document.fileName} (эмуляция)`)}
+                onClick={() => {
+                  const content = `ЭЛЕКТРОННЫЙ АРХИВ САМБО\n\nДокумент: ${document.title}\nФайл: ${document.fileName}\nВерсия: ${document.version}\nДата загрузки: ${document.uploadDate}\nСрок действия: ${document.expiryDate || 'Бессрочно'}\nСтатус верификации: ${document.verificationStatus}\nПроверил: ${document.verifiedBy || 'Ожидает проверки'}\n\nЦифровой кабинет самбо • Защищенный контур`;
+                  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = window.document.createElement('a');
+                  a.href = url;
+                  a.download = document.fileName.endsWith('.pdf') ? document.fileName.replace('.pdf', '.txt') : `${document.fileName}.txt`;
+                  window.document.body.appendChild(a);
+                  a.click();
+                  window.document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
                 className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold shadow-sm transition"
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />

@@ -15,13 +15,25 @@ import {
 import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 
 export const VerifierView: React.FC = () => {
-  const { documents, athletes, verifyDocument } = useApp();
+  const { documents, athletes, verifyDocument, activeNav, setActiveNav } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'queue' | 'athletes' | 'history'>('queue');
+  // Sync tab with activeNav
+  const activeTab: 'queue' | 'athletes' | 'history' =
+    activeNav === 'verifier_athletes'
+      ? 'athletes'
+      : activeNav === 'verifier_history'
+      ? 'history'
+      : 'queue';
+
+  const setTab = (t: 'queue' | 'athletes' | 'history') => {
+    setActiveNav(t === 'athletes' ? 'verifier_athletes' : t === 'history' ? 'verifier_history' : 'queue');
+  };
+
   const [selectedDocId, setSelectedDocId] = useState<string>('doc-1');
   const [verifierComment, setVerifierComment] = useState('');
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [warningMsg, setWarningMsg] = useState<string | null>(null);
 
   // Queue of unverified docs
   const queueDocs = documents.filter(d => d.verificationStatus === 'unverified');
@@ -35,17 +47,19 @@ export const VerifierView: React.FC = () => {
     verifyDocument(selectedDoc.id, 'verified', verifierComment);
     setSuccessToast(`Документ «${selectedDoc.title}» (${selectedAthlete?.shortName}) успешно подтверждён!`);
     setVerifierComment('');
+    setWarningMsg(null);
     setTimeout(() => setSuccessToast(null), 3500);
   };
 
   const handleRemarks = () => {
     if (!selectedDoc) return;
     if (!verifierComment.trim()) {
-      alert('Пожалуйста, укажите причину замечания в поле комментария.');
+      setWarningMsg('Пожалуйста, укажите причину замечания в поле комментария ниже.');
       return;
     }
     verifyDocument(selectedDoc.id, 'has_remarks', verifierComment);
     setSuccessToast(`Замечание к документу «${selectedDoc.title}» зафиксировано.`);
+    setWarningMsg(null);
     setTimeout(() => setSuccessToast(null), 3500);
   };
 
@@ -58,6 +72,18 @@ export const VerifierView: React.FC = () => {
             {successToast}
           </span>
           <button onClick={() => setSuccessToast(null)} className="underline text-xs font-bold">
+            Закрыть
+          </button>
+        </div>
+      )}
+
+      {warningMsg && (
+        <div className="bg-amber-600 text-white px-4 py-3 rounded-xl shadow-md text-sm font-semibold flex items-center justify-between animate-fadeIn">
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            {warningMsg}
+          </span>
+          <button onClick={() => setWarningMsg(null)} className="underline text-xs font-bold">
             Закрыть
           </button>
         </div>
@@ -86,7 +112,7 @@ export const VerifierView: React.FC = () => {
           {/* Subtabs */}
           <div className="bg-white rounded-xl border border-slate-200 p-1 flex items-center gap-1 shadow-sm">
             <button
-              onClick={() => setActiveTab('queue')}
+              onClick={() => setTab('queue')}
               className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'queue'
                   ? 'bg-red-600 text-white shadow-sm'
@@ -97,7 +123,7 @@ export const VerifierView: React.FC = () => {
               <span>Очередь ({queueDocs.length})</span>
             </button>
             <button
-              onClick={() => setActiveTab('athletes')}
+              onClick={() => setTab('athletes')}
               className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'athletes'
                   ? 'bg-slate-900 text-white shadow-sm'
@@ -108,7 +134,7 @@ export const VerifierView: React.FC = () => {
               <span>Спортсмены</span>
             </button>
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => setTab('history')}
               className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'history'
                   ? 'bg-slate-900 text-white shadow-sm'

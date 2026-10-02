@@ -19,8 +19,10 @@ export const SessionView: React.FC = () => {
   const {
     sessions,
     selectedSessionId,
+    setSelectedSessionId,
     athletes,
     updateAttendance,
+    reportAbsence,
     markAllPresent,
     addSessionNote
   } = useApp();
@@ -31,6 +33,8 @@ export const SessionView: React.FC = () => {
   const [noteInput, setNoteInput] = useState('');
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
   const [saveBanner, setSaveBanner] = useState(false);
+  const [excuseTargetAthlete, setExcuseTargetAthlete] = useState<typeof athletes[0] | null>(null);
+  const [excuseReasonInput, setExcuseReasonInput] = useState('Болезнь (справка от врача)');
 
   const handleStatusChange = (athleteId: string, status: AttendanceStatus) => {
     updateAttendance(currentSession.id, athleteId, status);
@@ -71,25 +75,41 @@ export const SessionView: React.FC = () => {
             <Clock className="w-3.5 h-3.5" />
             <span>Тренировочное занятие</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mt-1">
-            Занятие: Группа 1 • {currentSession.timeRange}
-          </h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Дата: <span className="font-bold text-slate-700">{currentSession.date}</span> • Тема: «{currentSession.topic}»
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+              Занятие: {currentSession.topic}
+            </h1>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400">Тренировка:</span>
+              <select
+                value={currentSession.id}
+                onChange={e => setSelectedSessionId(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              >
+                {sessions.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.date} ({s.timeRange}) — {s.topic}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Дата: <span className="font-bold text-slate-700">{currentSession.date}</span> • Время: <span className="font-mono text-slate-700">{currentSession.timeRange}</span> • Зал самбо №1
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => markAllPresent(currentSession.id)}
-            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5"
           >
             <CheckCheck className="w-4 h-4 text-emerald-600" />
             <span>Отметить группу</span>
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center gap-1.5"
           >
             <Save className="w-4 h-4" />
             <span>Сохранить</span>
@@ -181,13 +201,13 @@ export const SessionView: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* 3-Position Interactive Switcher */}
-                      <div className="grid grid-cols-3 sm:flex items-center bg-slate-100 p-1 rounded-xl gap-1 w-full sm:w-auto shrink-0">
+                      {/* 4-Position Interactive Switcher */}
+                      <div className="grid grid-cols-4 sm:flex items-center bg-slate-100 p-1 rounded-xl gap-1 w-full sm:w-auto shrink-0">
                         {/* Present */}
                         <button
                           type="button"
                           onClick={() => handleStatusChange(athlete.id, 'present')}
-                          className={`px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
+                          className={`px-2 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
                             status === 'present'
                               ? 'bg-emerald-500 text-white shadow-sm'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -201,7 +221,7 @@ export const SessionView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleStatusChange(athlete.id, 'absent')}
-                          className={`px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
+                          className={`px-2 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
                             status === 'absent'
                               ? 'bg-red-500 text-white shadow-sm'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -211,11 +231,29 @@ export const SessionView: React.FC = () => {
                           <span className="truncate">Н/Я</span>
                         </button>
 
+                        {/* Excused */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExcuseTargetAthlete(athlete);
+                            setExcuseReasonInput('Болезнь (справка от врача)');
+                          }}
+                          className={`px-2 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
+                            status === 'excused'
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                          }`}
+                          title="Уважительный пропуск (исключается из базы E)"
+                        >
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">Уваж.</span>
+                        </button>
+
                         {/* Unmarked */}
                         <button
                           type="button"
                           onClick={() => handleStatusChange(athlete.id, 'unmarked')}
-                          className={`px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
+                          className={`px-2 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 touch-manipulation ${
                             status === 'unmarked'
                               ? 'bg-amber-400 text-slate-900 shadow-sm'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -405,6 +443,76 @@ export const SessionView: React.FC = () => {
           athleteId={selectedAthleteForNote}
           onClose={() => setIsObsModalOpen(false)}
         />
+      )}
+
+      {/* Coach Excuse Absence Reason Modal */}
+      {excuseTargetAthlete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden flex flex-col p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-900">Уважительный пропуск</h3>
+                <p className="text-xs text-slate-500">
+                  {excuseTargetAthlete.fullName} • {currentSession.date}
+                </p>
+              </div>
+              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                Исключается из базы E
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Причина отсутствия
+              </label>
+              <input
+                type="text"
+                value={excuseReasonInput}
+                onChange={e => setExcuseReasonInput(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="Болезнь (справка от врача), заявление от родителей..."
+              />
+
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[
+                  'Болезнь (справка от врача)',
+                  'Заявление родителей по семейным обстоятельствам',
+                  'Участие в соревнованиях по самбо',
+                  'Плановая диспансеризация'
+                ].map(reason => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setExcuseReasonInput(reason)}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition"
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setExcuseTargetAthlete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  reportAbsence(excuseTargetAthlete.id, currentSession.id, excuseReasonInput.trim() || 'Уважительная причина');
+                  setExcuseTargetAthlete(null);
+                }}
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition"
+              >
+                Подтвердить пропуск
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
