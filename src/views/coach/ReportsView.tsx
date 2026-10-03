@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { calculateFourWeekAttendance, FourWeekReportRow, generateAttendanceCSV } from '../../utils/rules';
+import { calculateFourWeekAttendance, FourWeekReportRow, generateAttendanceCSV, isCoachForGroup } from '../../utils/rules';
 import {
   BarChart3,
   Download,
@@ -9,13 +9,56 @@ import {
   Trophy,
   HelpCircle,
   Sparkles,
-  Calendar
+  Calendar,
+  Users
 } from 'lucide-react';
 
 export const ReportsView: React.FC = () => {
-  const { athletes, sessions, setSelectedAthleteId, setActiveNav } = useApp();
+  const {
+    athletes,
+    sessions,
+    groups,
+    activeCoachId,
+    clubUsers,
+    setSelectedAthleteId,
+    setActiveNav
+  } = useApp();
 
-  const reportRows: FourWeekReportRow[] = calculateFourWeekAttendance(athletes, sessions);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<'october_2026' | 'september_2026' | 'all'>('october_2026');
+
+  const activeCoach =
+    (Array.isArray(clubUsers) ? clubUsers : []).find(u => u && u.id === activeCoachId) ||
+    (Array.isArray(clubUsers) ? clubUsers : []).find(u => u && u.role === 'coach');
+
+  const filteredAthletes = useMemo(() => {
+    const safeAthletes = Array.isArray(athletes) ? athletes : [];
+    if (selectedGroupId === 'all') {
+      return safeAthletes.filter(a => a && a.isActive);
+    }
+    return safeAthletes.filter(a => a && a.isActive && a.groupId === selectedGroupId);
+  }, [athletes, selectedGroupId]);
+
+  const filteredSessions = useMemo(() => {
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
+    return safeSessions.filter(s => {
+      if (!s) return false;
+      if (selectedGroupId !== 'all' && s.groupId && s.groupId !== selectedGroupId) {
+        return false;
+      }
+      if (selectedPeriod === 'october_2026') {
+        return s.date.startsWith('2026-10');
+      }
+      if (selectedPeriod === 'september_2026') {
+        return s.date.startsWith('2026-09');
+      }
+      return true;
+    });
+  }, [sessions, selectedGroupId, selectedPeriod]);
+
+  const reportRows: FourWeekReportRow[] = useMemo(() => {
+    return calculateFourWeekAttendance(filteredAthletes, filteredSessions);
+  }, [filteredAthletes, filteredSessions]);
 
   const handleExportCSV = () => {
     const csvContent = generateAttendanceCSV(reportRows);
@@ -109,13 +152,91 @@ export const ReportsView: React.FC = () => {
         </div>
       </div>
 
+      {/* Group & Period Filter Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Group Selector */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Группа
+            </label>
+            <select
+              value={selectedGroupId}
+              onChange={e => setSelectedGroupId(e.target.value)}
+              className="mt-0.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer"
+            >
+              <option value="all">Все группы клуба ({athletes.filter(a => a.isActive).length} спортсменов)</option>
+              {groups.map(g => {
+                const isMy = activeCoach && isCoachForGroup(activeCoach, g);
+                return (
+                  <option key={g.id} value={g.id}>
+                    {g.name} {isMy ? '★ (Моя группа)' : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        {/* Period Selector */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5" />
+            Период анализа:
+          </span>
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl flex-wrap">
+            <button
+              onClick={() => setSelectedPeriod('october_2026')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                selectedPeriod === 'october_2026'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Октябрь 2026 (Текущие 4 недели)
+            </button>
+            <button
+              onClick={() => setSelectedPeriod('september_2026')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                selectedPeriod === 'september_2026'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Сентябрь 2026
+            </button>
+            <button
+              onClick={() => setSelectedPeriod('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                selectedPeriod === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Все тренировки
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Table: Four Week Attendance Calculation */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="font-extrabold text-slate-900 text-sm">Таблица регулярности группы (Группа 1)</h3>
-            <p className="text-xs text-slate-500">
-              Окно анализа: последние 4 календарные недели ({sessions.length} тренировок в расписании)
+            <h3 className="font-extrabold text-slate-900 text-sm">
+              Таблица регулярности: {selectedGroupId === 'all' ? 'Все группы клуба' : groups.find(g => g.id === selectedGroupId)?.name || 'Выбранная группа'}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Окно анализа:{' '}
+              {selectedPeriod === 'october_2026'
+                ? 'Октябрь 2026 (Текущие 4 недели)'
+                : selectedPeriod === 'september_2026'
+                ? 'Сентябрь 2026'
+                : 'Все тренировки'}{' '}
+              ({filteredSessions.length} {filteredSessions.length === 1 ? 'тренировка' : filteredSessions.length < 5 ? 'тренировки' : 'тренировок'} в расписании)
             </p>
           </div>
           <span className="text-xs font-bold text-slate-400">
@@ -336,7 +457,11 @@ export const ReportsView: React.FC = () => {
         {/* Footer Notes (Slide 12) */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
           <span>* При равной доле посещений спортсмены делят призовое место (например, 1, 1, 3... место) согласно спортивному регламенту. Неотмеченные занятия блокируют расчет до заполнения.</span>
-          <span className="font-bold text-slate-700">Группа начальной подготовки №1 • Тренер: Иванов А. В.</span>
+          <span className="font-bold text-slate-700">
+            {selectedGroupId === 'all'
+              ? `Все группы клуба • Старший тренер: ${activeCoach?.fullName || 'Иванов А. В.'}`
+              : `${groups.find(g => g.id === selectedGroupId)?.name || 'Выбранная группа'} • Тренер: ${groups.find(g => g.id === selectedGroupId)?.coachName || activeCoach?.fullName || 'Иванов А. В.'}`}
+          </span>
         </div>
       </div>
     </div>

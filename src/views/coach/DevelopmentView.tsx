@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { evaluateS3Rule } from '../../utils/rules';
+import { evaluateS3Rule, DEMO_TODAY } from '../../utils/rules';
 import {
   Award,
   CheckCircle2,
@@ -33,6 +33,7 @@ export const DevelopmentView: React.FC = () => {
 
   // Form states for Weight
   const [weightAthleteId, setWeightAthleteId] = useState('ath-1');
+  const [weightDate, setWeightDate] = useState<string>(DEMO_TODAY);
   const [weightKg, setWeightKg] = useState('38.5');
   const [weightContext, setWeightContext] = useState('Перед вечерней тренировкой');
 
@@ -62,7 +63,7 @@ export const DevelopmentView: React.FC = () => {
 
     addWeight({
       athleteId: weightAthleteId,
-      date: '2026-10-06',
+      date: weightDate || DEMO_TODAY,
       weightKg: Math.round(val * 10) / 10,
       context: weightContext.trim() || 'Взвешивание в зале'
     });
@@ -477,6 +478,19 @@ export const DevelopmentView: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Дата взвешивания
+                  </label>
+                  <input
+                    type="date"
+                    value={weightDate}
+                    onChange={e => setWeightDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300"
+                  />
                 </div>
 
                 <div>

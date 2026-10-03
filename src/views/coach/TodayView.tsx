@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Users,
@@ -12,7 +12,8 @@ import {
   Calendar,
   Flame,
   ChevronRight,
-  FolderPlus
+  FolderPlus,
+  ChevronLeft
 } from 'lucide-react';
 import {
   getDocumentExpiryStatus,
@@ -21,6 +22,7 @@ import {
   getCoachShortName,
   DEMO_TODAY
 } from '../../utils/rules';
+import { addDays, formatRussianDate } from '../../utils/calendarEngine';
 
 export const TodayView: React.FC = () => {
   const {
@@ -66,10 +68,23 @@ export const TodayView: React.FC = () => {
 
   const coachAthleteIds = new Set(coachAthletes.map(a => a.id));
 
+  // Selected date state with interactive switching
+  const [selectedDate, setSelectedDate] = useState<string>(DEMO_TODAY);
+  const isSelectedToday = selectedDate === DEMO_TODAY;
+  const selectedDateFormatted = formatRussianDate(selectedDate, true);
+
+  const handlePrevDay = () => setSelectedDate(prev => addDays(prev, -1));
+  const handleNextDay = () => setSelectedDate(prev => addDays(prev, 1));
+  const handleToday = () => setSelectedDate(DEMO_TODAY);
+
   // Sessions for coach's groups
   const coachSessions = (Array.isArray(sessions) ? sessions : []).filter(s =>
     s && coachGroupIds.has(s.groupId)
   );
+
+  // Sessions on the selected date
+  const sessionsOnDate = coachSessions.filter(s => s.date === selectedDate);
+  const sessionForSelectedDate = sessionsOnDate.find(s => !s.isCompleted) || sessionsOnDate[0] || null;
 
   // Next / upcoming session for coach's groups
   const sortedSessions = [...coachSessions].sort(
@@ -162,33 +177,77 @@ export const TodayView: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-red-600 uppercase tracking-wider">
             <Calendar className="w-3.5 h-3.5" />
             <span>Цифровой кабинет тренера: {coachShort}</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-            Сегодня
+            {isSelectedToday ? 'Сегодня' : 'Обзор расписания дня'}
           </h1>
           <p className="text-sm text-slate-500 font-medium">
             {coachGroups.length > 0
-              ? `Группы: ${coachGroups.map(g => g.name.replace(/ \(.*\)/, '')).join(', ')} • 6 октября 2026, вторник`
-              : '6 октября 2026, вторник'}
+              ? `Группы: ${coachGroups.map(g => g.name.replace(/ \(.*\)/, '')).join(', ')}`
+              : 'Нет закреплённых групп'}
           </p>
         </div>
 
-        {upcomingSession && (
-          <div className="flex items-center gap-2">
+        {/* Interactive Day Switcher: [← Вчера] [Дата (Сегодня)] [Завтра →] */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
             <button
-              onClick={() => handleOpenSession(upcomingSession.id)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm shadow-sm shadow-red-900/20 transition"
+              onClick={handlePrevDay}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1"
+              title="Переключить на вчерашний день"
             >
-              <Dumbbell className="w-4 h-4" />
-              <span>Начать тренировку ({upcomingSession.timeRange.split('–')[0] || '18:00'})</span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Вчера</span>
+            </button>
+
+            <button
+              onClick={handleToday}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                isSelectedToday
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+              }`}
+              title={`Перейти к Сегодня (${formatRussianDate(DEMO_TODAY, false)})`}
+            >
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{selectedDateFormatted}</span>
+              <span className="sm:hidden">{formatRussianDate(selectedDate, false)}</span>
+              {isSelectedToday && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-md bg-white/25 text-white text-[10px] uppercase font-black">
+                  Сегодня
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={handleNextDay}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1"
+              title="Переключить на завтрашний день"
+            >
+              <span>Завтра</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
+
+          {(sessionForSelectedDate || upcomingSession) && (
+            <button
+              onClick={() => handleOpenSession((sessionForSelectedDate || upcomingSession)!.id)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition shrink-0"
+            >
+              <Dumbbell className="w-4 h-4" />
+              <span>
+                {sessionForSelectedDate
+                  ? `Начать тренировку (${sessionForSelectedDate.timeRange.split('–')[0] || '18:00'})`
+                  : `Ближайшая: ${upcomingSession?.date}`}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Empty State: If coach has no groups */}
@@ -310,40 +369,55 @@ export const TodayView: React.FC = () => {
             </div>
           </div>
 
-          {/* Widget «Ближайшее занятие» */}
-          {upcomingSession ? (
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-md shadow-red-900/40 shrink-0">
-                  <Flame className="w-8 h-8" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
-                      {upcomingGroup?.name || 'Группа'}
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">
-                      {upcomingSession.timeRange} ({upcomingSession.date === DEMO_TODAY ? 'сегодня' : upcomingSession.date})
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-bold mt-1 text-white">{upcomingSession.topic}</h2>
-                  <p className="text-xs text-slate-300 mt-1 max-w-xl">
-                    {upcomingSession.plan && upcomingSession.plan.length > 0
-                      ? `План занятия: ${upcomingSession.plan.map(p => `${p.title} (${p.timeRange})`).join(' • ')}`
-                      : 'План занятия: Разминка и отработка базовой техники самбо.'}
-                  </p>
-                </div>
-              </div>
+          {/* Widget «Тренировки дня / Ближайшее занятие» */}
+          {sessionsOnDate.length > 0 ? (
+            <div className="space-y-4">
+              {sessionsOnDate.map(session => {
+                const groupForSession = coachGroups.find(g => g.id === session.groupId);
+                return (
+                  <div
+                    key={session.id}
+                    className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-6"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-md shadow-red-900/40 shrink-0">
+                        <Flame className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+                            {groupForSession?.name || 'Группа'}
+                          </span>
+                          <span className="text-xs text-slate-300 font-medium">
+                            {session.timeRange} • {isSelectedToday ? `Сегодня (${formatRussianDate(selectedDate, false)})` : selectedDateFormatted}
+                          </span>
+                          {session.isCompleted && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              Завершено
+                            </span>
+                          )}
+                        </div>
+                        <h2 className="text-xl font-bold mt-1 text-white">{session.topic}</h2>
+                        <p className="text-xs text-slate-300 mt-1 max-w-xl">
+                          {session.plan && session.plan.length > 0
+                            ? `План занятия: ${session.plan.map(p => `${p.title} (${p.timeRange})`).join(' • ')}`
+                            : 'План занятия: Разминка и отработка базовой техники самбо.'}
+                        </p>
+                      </div>
+                    </div>
 
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={() => handleOpenSession(upcomingSession.id)}
-                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md shadow-red-900/40 transition flex items-center gap-2"
-                >
-                  <span>Открыть занятие</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        onClick={() => handleOpenSession(session.id)}
+                        className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md shadow-red-900/40 transition flex items-center gap-2"
+                      >
+                        <span>Открыть занятие</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -352,18 +426,37 @@ export const TodayView: React.FC = () => {
                   <Clock className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Нет запланированных тренировок</h3>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    Нет тренировок на {selectedDateFormatted}
+                  </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Для групп тренера {coachShort} в расписании нет предстоящих занятий.
+                    {upcomingSession
+                      ? `Ближайшая тренировка запланирована на ${upcomingSession.date} (${upcomingSession.timeRange}, ${upcomingGroup?.name || 'Группа'}).`
+                      : `Для групп тренера ${coachShort} в расписании нет предстоящих занятий.`}
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveNav('training_plans')}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition shrink-0"
-              >
-                Составить занятие
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {!isSelectedToday && (
+                  <button
+                    onClick={handleToday}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition"
+                  >
+                    Вернуться к Сегодня
+                  </button>
+                )}
+                {upcomingSession && (
+                  <button
+                    onClick={() => {
+                      setSelectedDate(upcomingSession.date);
+                      handleOpenSession(upcomingSession.id);
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
+                  >
+                    Ближайшее ({upcomingSession.date})
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -404,7 +497,7 @@ export const TodayView: React.FC = () => {
                           <div>
                             <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
                               <span>Низкая посещаемость: {row.ratePercent}%</span>
-                              <span className="text-xs font-semibold px-2 py-0.2 rounded bg-red-200 text-red-800">
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-200 text-red-800">
                                 Правило 4 недель
                               </span>
                             </div>
@@ -444,7 +537,7 @@ export const TodayView: React.FC = () => {
                                 {abs.isExcused ? 'Уважительный пропуск' : 'Пропуск без причины'}
                               </span>
                               <span
-                                className={`text-xs font-semibold px-2 py-0.2 rounded ${
+                                className={`text-xs font-semibold px-2 py-0.5 rounded ${
                                   abs.isExcused
                                     ? 'bg-blue-200 text-blue-800'
                                     : 'bg-amber-200 text-amber-800'
@@ -481,7 +574,7 @@ export const TodayView: React.FC = () => {
                                 <span>
                                   {doc.title}: {isExpired ? 'истёк' : 'скоро истекает'}
                                 </span>
-                                <span className="text-xs font-semibold px-2 py-0.2 rounded bg-amber-200 text-amber-800">
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-200 text-amber-800">
                                   до {doc.expiryDate}
                                 </span>
                               </div>
@@ -511,7 +604,7 @@ export const TodayView: React.FC = () => {
                             <div>
                               <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
                                 <span>{doc.title}: на проверке</span>
-                                <span className="text-xs font-semibold px-2 py-0.2 rounded bg-blue-200 text-blue-800">
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-200 text-blue-800">
                                   Версия {doc.version}
                                 </span>
                               </div>
@@ -541,7 +634,7 @@ export const TodayView: React.FC = () => {
                             <div>
                               <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
                                 <span>Задача: {t.exerciseTitle}</span>
-                                <span className="text-xs font-semibold px-2 py-0.2 rounded bg-slate-200 text-slate-700">
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
                                   до {t.deadline}
                                 </span>
                               </div>
