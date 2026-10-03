@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AdmissionStatus, AdmissionDecision } from '../../types';
 import { X, ShieldCheck, CheckCircle2, XCircle, Clock, AlertTriangle, AlertCircle } from 'lucide-react';
@@ -25,6 +25,17 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
     athlete?.admissionDecision?.reviewedBy || 'Тренер 1 (Иванов А. В.)'
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (!athlete) return null;
 
@@ -48,25 +59,37 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
       return;
     }
 
-    const decision: AdmissionDecision = {
-      status,
-      basis: basis.trim(),
-      reviewedAt: '2026-10-06',
-      reviewedBy: reviewedBy.trim(),
-      validUntil: validUntil || undefined
-    };
-    updateAdmissionDecision(athleteId, decision);
-    onClose();
+    setIsSubmitting(true);
+    try {
+      const decision: AdmissionDecision = {
+        status,
+        basis: basis.trim(),
+        reviewedAt: '2026-10-06',
+        reviewedBy: reviewedBy.trim(),
+        validUntil: validUntil || undefined
+      };
+      updateAdmissionDecision(athleteId, decision);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
+    <div
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -216,9 +239,12 @@ export const AdmissionDecisionModal: React.FC<Props> = ({ athleteId, onClose }) 
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition"
+              disabled={isSubmitting}
+              className={`px-5 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              Зафиксировать решение
+              {isSubmitting ? 'Фиксация...' : 'Зафиксировать решение'}
             </button>
           </div>
         </form>

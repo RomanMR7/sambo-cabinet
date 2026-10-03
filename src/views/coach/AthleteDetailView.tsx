@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { getDocumentExpiryStatus } from '../../utils/rules';
+import { getDocumentExpiryStatus, filterDocumentsForRole } from '../../utils/rules';
 import { DocumentRecord } from '../../types';
 import {
   FileText,
@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   Eye,
   Send,
-  MoreVertical
+  MoreVertical,
+  Lock
 } from 'lucide-react';
 import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 import { UploadDocumentModal } from '../../components/modals/UploadDocumentModal';
@@ -35,11 +36,17 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
     weights,
     competitions,
     setRole,
-    setActiveNav
+    setActiveNav,
+    role,
+    groups
   } = useApp();
 
   const athlete = athletes.find(a => a && a.id === selectedAthleteId) || athletes[0];
-  const athleteDocs = athlete ? documents.filter(d => d.athleteId === athlete.id) : [];
+  const athleteGroup = groups.find(g => g.id === athlete?.groupId);
+  const rawAthleteDocs = athlete ? documents.filter(d => d.athleteId === athlete.id) : [];
+  const currentAthleteId = (role === 'parent' || role === 'athlete') ? 'ath-1' : athlete?.id;
+  const athleteDocs = filterDocumentsForRole(rawAthleteDocs, role, currentAthleteId);
+  const hiddenMedicalCount = rawAthleteDocs.length - athleteDocs.length;
 
   // Default tab: 'documents' as requested in prompt:
   // "Горизонтальные табы: Обзор, Развитие, Посещения, Тесты, Старты, Документы (активный по умолчанию для демо), История."
@@ -56,9 +63,21 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
   const [isAddWeightOpen, setIsAddWeightOpen] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    };
+  }, []);
+
   const showNotification = (msg: string) => {
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
     setNoticeMessage(msg);
-    setTimeout(() => setNoticeMessage(null), 4000);
+    noticeTimerRef.current = setTimeout(() => {
+      setNoticeMessage(null);
+      noticeTimerRef.current = null;
+    }, 4000);
   };
 
   const tabs: Array<{ id: typeof activeTab; label: string }> = [
@@ -81,6 +100,27 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl"
         >
           Вернуться к списку группы
+        </button>
+      </div>
+    );
+  }
+
+  // 152-FZ: Strict isolation for Parent and Athlete roles
+  if ((role === 'parent' || role === 'athlete') && athlete.id !== 'ath-1') {
+    return (
+      <div className="bg-white rounded-2xl border border-red-200 p-12 text-center space-y-4 animate-fadeIn">
+        <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center mx-auto text-red-600">
+          <Lock className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">Доступ заблокирован (152-ФЗ)</h2>
+        <p className="text-sm text-slate-600 max-w-md mx-auto">
+          Просмотр персональных данных и документов других спортсменов строго запрещен законодательством о защите персональных данных.
+        </p>
+        <button
+          onClick={() => setActiveNav(role === 'parent' ? 'parent_main' : 'athlete_main')}
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition"
+        >
+          Вернуться в свой личный кабинет
         </button>
       </div>
     );
@@ -124,7 +164,7 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
               </span>
             </div>
             <div className="text-sm text-slate-500 mt-0.5">
-              {athlete.fullName} • Группа 1 (Самбо)
+              {athlete.fullName} • {athleteGroup?.name || 'Группа самбо'}
             </div>
             <div className="text-xs text-slate-400 mt-1">
               Родитель: {athlete.parentName} ({athlete.parentPhone})
@@ -187,14 +227,26 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
                     Учет медицинских справок, страховых полисов и согласий
                   </p>
                 </div>
-                <button
-                  onClick={() => setIsUploadOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Добавить документ</span>
-                </button>
+                {role !== 'admin' && (
+                  <button
+                    onClick={() => setIsUploadOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Добавить документ</span>
+                  </button>
+                )}
               </div>
+
+              {role === 'admin' && hiddenMedicalCount > 0 && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 flex items-center gap-2.5">
+                  <Lock className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>
+                    <strong>Ограничение роли Администратора (152-ФЗ): </strong>
+                    Медицинские справки ({hiddenMedicalCount}) скрыты в соответствии с законодательством о врачебной тайне.
+                  </span>
+                </div>
+              )}
 
               {/* Document List (Slide 05) */}
               <div className="space-y-3">

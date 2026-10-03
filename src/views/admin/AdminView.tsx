@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Shield,
@@ -48,6 +48,25 @@ export const AdminView: React.FC = () => {
   const [editingSlot, setEditingSlot] = useState<ScheduleSlot | null | undefined>(undefined);
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && securityModalOpen) {
+        setSecurityModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [securityModalOpen]);
 
   // Filters for roles tab
   const [rolesSearch, setRolesSearch] = useState('');
@@ -56,8 +75,14 @@ export const AdminView: React.FC = () => {
   const navTab = activeNav.startsWith('admin_') ? activeNav : 'admin_main';
 
   const showToast = (msg: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3500);
+    toastTimerRef.current = setTimeout(() => {
+      setToastMsg(null);
+      toastTimerRef.current = null;
+    }, 3500);
   };
 
   const handleMedicalDocClick = () => {
@@ -106,7 +131,12 @@ export const AdminView: React.FC = () => {
 
       {/* Security Warning Modal */}
       {securityModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+        <div
+          onClick={e => {
+            if (e.target === e.currentTarget) setSecurityModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+        >
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-red-200 overflow-hidden flex flex-col p-6 space-y-4">
             <div className="flex items-center gap-3 text-red-600">
               <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">

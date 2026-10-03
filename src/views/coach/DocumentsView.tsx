@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { getDocumentExpiryStatus } from '../../utils/rules';
+import { getDocumentExpiryStatus, filterDocumentsForRole } from '../../utils/rules';
 import { DocumentRecord } from '../../types';
 import {
   FileText,
@@ -12,13 +12,16 @@ import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 import { UploadDocumentModal } from '../../components/modals/UploadDocumentModal';
 
 export const DocumentsView: React.FC = () => {
-  const { documents, athletes, selectedAthleteId, setSelectedAthleteId, setActiveNav } = useApp();
+  const { documents, athletes, selectedAthleteId, setSelectedAthleteId, setActiveNav, role } = useApp();
   const [filterType, setFilterType] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
   const [uploadAthleteId, setUploadAthleteId] = useState<string | null>(null);
 
-  const filteredDocs = documents.filter(doc => {
+  const currentAthleteId = (role === 'parent' || role === 'athlete') ? 'ath-1' : selectedAthleteId;
+  const accessibleDocs = filterDocumentsForRole(documents, role, currentAthleteId);
+
+  const filteredDocs = accessibleDocs.filter(doc => {
     const athlete = athletes.find(a => a.id === doc.athleteId);
     const matchesSearch =
       doc.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -66,7 +69,7 @@ export const DocumentsView: React.FC = () => {
               filterType === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            Все ({documents.length})
+            Все ({accessibleDocs.length})
           </button>
           <button
             onClick={() => setFilterType('unverified')}
@@ -74,7 +77,7 @@ export const DocumentsView: React.FC = () => {
               filterType === 'unverified' ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            На проверке ({documents.filter(d => d.verificationStatus === 'unverified').length})
+            На проверке ({accessibleDocs.filter(d => d.verificationStatus === 'unverified').length})
           </button>
           <button
             onClick={() => setFilterType('expiring')}
@@ -84,14 +87,16 @@ export const DocumentsView: React.FC = () => {
           >
             Истекают скоро
           </button>
-          <button
-            onClick={() => setFilterType('medical')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              filterType === 'medical' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Медицинские
-          </button>
+          {role !== 'admin' && (
+            <button
+              onClick={() => setFilterType('medical')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                filterType === 'medical' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Медицинские
+            </button>
+          )}
           <button
             onClick={() => setFilterType('insurance')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DocType } from '../../types';
 import { X, Upload, FileText, AlertCircle } from 'lucide-react';
@@ -13,6 +13,7 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
   const { uploadDocument, athletes } = useApp();
   const athlete = athletes.find(a => a.id === athleteId);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [docType, setDocType] = useState<DocType>(defaultType);
   const [title, setTitle] = useState(
     defaultType === 'medical'
@@ -25,6 +26,16 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
   const [fileName, setFileName] = useState('');
   const [fileSelected, setFileSelected] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleTypeChange = (t: DocType) => {
     setDocType(t);
@@ -70,26 +81,40 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
       return;
     }
 
-    const finalFileName = fileName || `${docType === 'medical' ? 'Мед_справка' : docType === 'insurance' ? 'Полис' : 'Согласие'}_${athlete?.shortName?.replace(/[\s.]+/g, '_') || 'спортсмен'}.pdf`;
+    setIsSubmitting(true);
+    try {
+      const finalFileName =
+        fileName ||
+        `${docType === 'medical' ? 'Мед_справка' : docType === 'insurance' ? 'Полис' : 'Согласие'}_${
+          athlete?.shortName?.replace(/[\s.]+/g, '_') || 'спортсмен'
+        }.pdf`;
 
-    uploadDocument(athleteId, {
-      type: docType,
-      title: title.trim(),
-      fileName: finalFileName,
-      expiryDate: docType === 'consent' ? undefined : expiryDate
-    });
+      uploadDocument(athleteId, {
+        type: docType,
+        title: title.trim(),
+        fileName: finalFileName,
+        expiryDate: docType === 'consent' ? undefined : expiryDate
+      });
 
-    onClose();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
+    <div 
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -246,9 +271,12 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition"
+              disabled={isSubmitting}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              Сохранить и передать на проверку
+              {isSubmitting ? 'Сохранение...' : 'Сохранить и передать на проверку'}
             </button>
           </div>
         </form>

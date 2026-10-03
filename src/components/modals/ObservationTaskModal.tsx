@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { X, Award, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -11,6 +11,7 @@ interface Props {
 export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillId, onClose }) => {
   const { athletes, skills, addObservationTask } = useApp();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAthleteId, setSelectedAthleteId] = useState(athleteId);
   const [observation, setObservation] = useState('При входе в захват теряет устойчивость опорной ноги');
   const [selectedSkillId, setSelectedSkillId] = useState(initialSkillId || skills[0]?.id || 'sk-1');
@@ -19,6 +20,16 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
   const [deadline, setDeadline] = useState('2026-10-12');
   const [publishedToFamily, setPublishedToFamily] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSkillChange = (newSkillId: string) => {
     setSelectedSkillId(newSkillId);
@@ -53,6 +64,8 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
@@ -60,23 +73,31 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
     }
     if (!selectedSkill) return;
 
-    addObservationTask({
-      athleteId: selectedAthleteId,
-      observation: observation.trim(),
-      skillId: selectedSkillId,
-      skillTitle: selectedSkill.title,
-      exerciseTitle: exerciseTitle.trim() || selectedSkill.recommendedExercise,
-      deadline,
-      status: 'active',
-      publishedToFamily,
-      coachFeedback: undefined
-    });
+    setIsSubmitting(true);
+    try {
+      addObservationTask({
+        athleteId: selectedAthleteId,
+        observation: observation.trim(),
+        skillId: selectedSkillId,
+        skillTitle: selectedSkill.title,
+        exerciseTitle: exerciseTitle.trim() || selectedSkill.recommendedExercise,
+        deadline,
+        status: 'active',
+        publishedToFamily,
+        coachFeedback: undefined
+      });
 
-    onClose();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
+    <div 
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -231,10 +252,13 @@ export const ObservationTaskModal: React.FC<Props> = ({ athleteId, initialSkillI
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition flex items-center gap-1.5"
+              disabled={isSubmitting}
+              className={`px-5 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition flex items-center gap-1.5 ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <CheckCircle className="w-4 h-4" />
-              <span>Создать задачу</span>
+              <span>{isSubmitting ? 'Создание...' : 'Создать задачу'}</span>
             </button>
           </div>
         </form>

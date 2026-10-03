@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { X, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -17,6 +17,17 @@ export const AddStaffModal: React.FC<Props> = ({ onClose, onSaved }) => {
   const [email, setEmail] = useState('');
   const [isVerifierAssigned, setIsVerifierAssigned] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,22 +43,48 @@ export const AddStaffModal: React.FC<Props> = ({ onClose, onSaved }) => {
       return;
     }
 
-    addClubUser({
-      fullName: trimmedName,
-      role,
-      phone: phone.trim() || '+7 (999) 000-00-00',
-      email: email.trim() || `${trimmedName.split(' ')[0]?.toLowerCase() || 'staff'}@sambo-club.ru`,
-      title: trimmedTitle,
-      isHeadManager: false,
-      isVerifierAssigned: role === 'verifier' || isVerifierAssigned
-    });
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && trimmedPhone !== '+7 (' && trimmedPhone.length < 7) {
+      setErrorMsg('Укажите корректный контактный телефон (не менее 7 символов) или оставьте поле пустым.');
+      return;
+    }
 
-    if (onSaved) onSaved(trimmedName);
-    onClose();
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && (!trimmedEmail.includes('@') || !trimmedEmail.includes('.'))) {
+      setErrorMsg('Укажите корректный адрес электронной почты или оставьте поле пустым.');
+      return;
+    }
+
+    const finalPhone = (!trimmedPhone || trimmedPhone === '+7 (')
+      ? '+7 (999) 000-00-00'
+      : trimmedPhone;
+
+    setIsSubmitting(true);
+    try {
+      addClubUser({
+        fullName: trimmedName,
+        role,
+        phone: finalPhone,
+        email: trimmedEmail || `${trimmedName.split(' ')[0]?.toLowerCase() || 'staff'}@sambo-club.ru`,
+        title: trimmedTitle,
+        isHeadManager: false,
+        isVerifierAssigned: role === 'verifier' || isVerifierAssigned
+      });
+
+      if (onSaved) onSaved(trimmedName);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -214,10 +251,11 @@ export const AddStaffModal: React.FC<Props> = ({ onClose, onSaved }) => {
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-1.5"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Сохранить сотрудника</span>
+              <span>{isSubmitting ? 'Сохранение...' : 'Сохранить сотрудника'}</span>
             </button>
           </div>
         </form>

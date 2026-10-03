@@ -43,15 +43,27 @@ export const DevelopmentView: React.FC = () => {
   const [videoTimestamp, setVideoTimestamp] = useState('02:15');
   const [videoNoteText, setVideoNoteText] = useState('Своевременный подворот таза при срыве захвата соперника');
 
+  const sanitizeVideoUrl = (url: string): string => {
+    if (!url || typeof url !== 'string') return '#';
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+    return '#';
+  };
+
   const handleAddWeight = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseFloat(weightKg);
-    if (isNaN(val) || val <= 0) return;
+    if (isNaN(val) || val < 15 || val > 200) {
+      alert('Укажите корректный вес спортсмена в диапазоне от 15 до 200 кг.');
+      return;
+    }
 
     addWeight({
       athleteId: weightAthleteId,
       date: '2026-10-06',
-      weightKg: val,
+      weightKg: Math.round(val * 10) / 10,
       context: weightContext.trim() || 'Взвешивание в зале'
     });
     setWeightContext('');
@@ -59,12 +71,20 @@ export const DevelopmentView: React.FC = () => {
 
   const handleAddVideo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoTitle.trim()) return;
+    if (!videoTitle.trim()) {
+      alert('Укажите название видеоразбора.');
+      return;
+    }
+    const cleanUrl = videoUrl.trim();
+    if (!cleanUrl || !/^https?:\/\//i.test(cleanUrl)) {
+      alert('Укажите корректный веб-адрес видео (должен начинаться с http:// или https://). Ссылки с опасными протоколами запрещены.');
+      return;
+    }
 
     addVideoNote({
       athleteId: videoAthleteId,
       title: videoTitle.trim(),
-      videoUrl: videoUrl.trim(),
+      videoUrl: cleanUrl,
       timestamp: videoTimestamp.trim() || '00:00',
       note: videoNoteText.trim()
     });
@@ -532,9 +552,15 @@ export const DevelopmentView: React.FC = () => {
 
                     <div className="pt-2 flex justify-end">
                       <a
-                        href={vn.videoUrl}
+                        href={sanitizeVideoUrl(vn.videoUrl)}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
+                        onClick={e => {
+                          if (sanitizeVideoUrl(vn.videoUrl) === '#') {
+                            e.preventDefault();
+                            alert('Некорректная или небезопасная ссылка на видео.');
+                          }
+                        }}
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:underline"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />

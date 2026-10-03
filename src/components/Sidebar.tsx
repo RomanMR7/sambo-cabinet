@@ -18,13 +18,15 @@ import {
   X
 } from 'lucide-react';
 
+import { getCoachShortName, isCoachForGroup } from '../utils/rules';
+
 interface Props {
   mobileOpen: boolean;
   onCloseMobile: () => void;
 }
 
 export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
-  const { role, activeNav, setActiveNav, documents, clubUsers } = useApp();
+  const { role, activeNav, setActiveNav, documents, clubUsers, activeCoachId, groups, selectedGroupId } = useApp();
 
   // Pending docs count for verifier badge
   const pendingDocsCount = documents.filter(d => d.verificationStatus === 'unverified').length;
@@ -43,8 +45,33 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
         .join('')
     : 'ДМ';
 
+  const activeCoach =
+    clubUsers?.find(u => u.id === activeCoachId) ||
+    clubUsers?.find(u => u.role === 'coach');
+
+  const coachFullName = activeCoach?.fullName || 'Иванов Алексей Васильевич';
+  const coachShort = getCoachShortName(coachFullName);
+  const coachTitle = activeCoach?.title || 'Старший тренер';
+  const coachInitials = activeCoach
+    ? activeCoach.fullName
+        .split(' ')
+        .map(p => p[0])
+        .slice(0, 2)
+        .join('')
+    : 'АИ';
+
+  const coachGroups = (Array.isArray(groups) ? groups : []).filter(
+    g => activeCoach && isCoachForGroup(activeCoach, g)
+  );
+
+  const coachBadge = coachGroups.length > 0
+    ? coachGroups.map(g => g.name.replace(/ \(.*\)/, '')).join(', ')
+    : 'Тренер';
+
+  const activeGroup = groups.find(g => g.id === selectedGroupId) || coachGroups[0] || groups[0];
+
   const userProfiles: Record<string, { name: string; title: string; initials: string; badge: string }> = {
-    coach: { name: 'Иванов А. В.', title: 'Старший тренер', initials: 'АИ', badge: 'Тренер Группы 1' },
+    coach: { name: coachShort, title: coachTitle, initials: coachInitials, badge: coachBadge },
     athlete: { name: 'Антон Кузнецов', title: 'Спортсмен (12 лет)', initials: 'АК', badge: 'Группа 1 • -42 кг' },
     parent: { name: 'Ольга Кузнецова', title: 'Родитель спортсмена', initials: 'ОК', badge: 'Мама Антона К.' },
     admin: { name: adminName, title: adminTitle, initials: adminInitials, badge: 'Управляющий клуба' },
@@ -202,7 +229,7 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
             <span className="text-slate-300 font-mono">1.0.0</span>
           </div>
           <div className="mt-1 text-[11px] text-slate-400">
-            Самбо: Группа 1 (2026/2027)
+            {activeGroup ? `${activeGroup.name} (2026/2027)` : 'Самбо: Цифровой кабинет'}
           </div>
         </div>
       </aside>

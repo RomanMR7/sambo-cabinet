@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ExerciseCategory, ExerciseItem } from '../../types';
 import {
@@ -50,6 +50,7 @@ export const TrainingPlansView: React.FC = () => {
 
   // Add Exercise Modal state
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
+  const [isSubmittingExercise, setIsSubmittingExercise] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<ExerciseCategory>('throws');
   const [newIntensity, setNewIntensity] = useState<'low' | 'medium' | 'high'>('high');
@@ -59,10 +60,35 @@ export const TrainingPlansView: React.FC = () => {
 
   // Success message toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAddExerciseOpen) {
+        setIsAddExerciseOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddExerciseOpen]);
 
   const showToast = (msg: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 4000);
+    toastTimerRef.current = setTimeout(() => {
+      setToastMsg(null);
+      toastTimerRef.current = null;
+    }, 4000);
   };
 
   // Add exercise to builder plan
@@ -119,6 +145,7 @@ export const TrainingPlansView: React.FC = () => {
 
   const handleSaveNewExercise = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingExercise) return;
     if (!newTitle.trim() || newTitle.trim().length < 3) {
       setFormError('Укажите название упражнения (не менее 3 символов).');
       return;
@@ -135,20 +162,25 @@ export const TrainingPlansView: React.FC = () => {
       sfp: 'СФП и ОФП'
     };
 
-    addExercise({
-      title: newTitle.trim(),
-      category: newCategory,
-      categoryLabel: categoryLabels[newCategory],
-      intensity: newIntensity,
-      durationMinutes: parseInt(newDuration, 10) || 15,
-      description: newDescription.trim()
-    });
+    setIsSubmittingExercise(true);
+    try {
+      addExercise({
+        title: newTitle.trim(),
+        category: newCategory,
+        categoryLabel: categoryLabels[newCategory],
+        intensity: newIntensity,
+        durationMinutes: parseInt(newDuration, 10) || 15,
+        description: newDescription.trim()
+      });
 
-    setNewTitle('');
-    setNewDescription('');
-    setIsAddExerciseOpen(false);
-    setFormError(null);
-    showToast('Новое упражнение успешно внесено в банк элементов самбо!');
+      setNewTitle('');
+      setNewDescription('');
+      setIsAddExerciseOpen(false);
+      setFormError(null);
+      showToast('Новое упражнение успешно внесено в банк элементов самбо!');
+    } finally {
+      setIsSubmittingExercise(false);
+    }
   };
 
   // Filtered exercises for Catalog tab
@@ -687,7 +719,12 @@ export const TrainingPlansView: React.FC = () => {
 
       {/* Add Exercise Modal */}
       {isAddExerciseOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+        <div
+          onClick={e => {
+            if (e.target === e.currentTarget) setIsAddExerciseOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+        >
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -803,9 +840,10 @@ export const TrainingPlansView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+                  disabled={isSubmittingExercise}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold"
                 >
-                  Сохранить в банк
+                  {isSubmittingExercise ? 'Сохранение...' : 'Сохранить в банк'}
                 </button>
               </div>
             </form>

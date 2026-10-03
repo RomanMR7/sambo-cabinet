@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AttendanceStatus } from '../../types';
 import {
@@ -14,6 +14,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { ObservationTaskModal } from '../../components/modals/ObservationTaskModal';
+import { isCoachForGroup } from '../../utils/rules';
 
 export const SessionView: React.FC = () => {
   const {
@@ -21,20 +22,75 @@ export const SessionView: React.FC = () => {
     selectedSessionId,
     setSelectedSessionId,
     athletes,
+    groups,
+    activeCoachId,
+    clubUsers,
     updateAttendance,
     reportAbsence,
     markAllPresent,
     addSessionNote
   } = useApp();
 
-  const currentSession = sessions.find(s => s && s.id === selectedSessionId) || sessions[0];
+  const activeCoach =
+    (Array.isArray(clubUsers) ? clubUsers : []).find(u => u && u.id === activeCoachId) ||
+    (Array.isArray(clubUsers) ? clubUsers : []).find(u => u && u.role === 'coach');
+
+  const coachGroups = (Array.isArray(groups) ? groups : []).filter(g =>
+    activeCoach && isCoachForGroup(activeCoach, g)
+  );
+
+  const coachGroupIds = new Set(coachGroups.map(g => g.id));
+
+  const mySessions = sessions.filter(s => coachGroupIds.has(s.groupId));
+  const otherSessions = sessions.filter(s => !coachGroupIds.has(s.groupId));
+
+  const currentSession = sessions.find(s => s && s.id === selectedSessionId) || mySessions[0] || sessions[0];
+
+  const currentSessionAthletes = (Array.isArray(athletes) ? athletes : []).filter(
+    a => a && a.groupId === currentSession?.groupId && a.isActive
+  );
+
   const [activeTab, setActiveTab] = useState<'plan' | 'attendance' | 'fact' | 'observations'>('attendance');
-  const [selectedAthleteForNote, setSelectedAthleteForNote] = useState<string>('ath-1');
+  const [selectedAthleteForNote, setSelectedAthleteForNote] = useState<string>(
+    currentSessionAthletes[0]?.id || ''
+  );
   const [noteInput, setNoteInput] = useState('');
   const [isObsModalOpen, setIsObsModalOpen] = useState(false);
   const [saveBanner, setSaveBanner] = useState(false);
+  const saveBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Synchronize note athlete when session / group changes
+  useEffect(() => {
+    if (currentSessionAthletes.length > 0) {
+      if (!currentSessionAthletes.some(a => a.id === selectedAthleteForNote)) {
+        setSelectedAthleteForNote(currentSessionAthletes[0].id);
+      }
+    } else {
+      setSelectedAthleteForNote('');
+    }
+  }, [currentSession?.id, currentSession?.groupId, currentSessionAthletes]);
+
+  useEffect(() => {
+    return () => {
+      if (saveBannerTimerRef.current) {
+        clearTimeout(saveBannerTimerRef.current);
+      }
+    };
+  }, []);
+
   const [excuseTargetAthlete, setExcuseTargetAthlete] = useState<typeof athletes[0] | null>(null);
   const [excuseReasonInput, setExcuseReasonInput] = useState('Болезнь (справка от врача)');
+  const [isSubmittingExcuse, setIsSubmittingExcuse] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && excuseTargetAthlete) {
+        setExcuseTargetAthlete(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [excuseTargetAthlete]);
 
   if (!currentSession) {
     return (
@@ -51,8 +107,14 @@ export const SessionView: React.FC = () => {
   };
 
   const handleSave = () => {
+    if (saveBannerTimerRef.current) {
+      clearTimeout(saveBannerTimerRef.current);
+    }
     setSaveBanner(true);
-    setTimeout(() => setSaveBanner(false), 3000);
+    saveBannerTimerRef.current = setTimeout(() => {
+      setSaveBanner(false);
+      saveBannerTimerRef.current = null;
+    }, 3000);
   };
 
   const handleAddQuickNote = (e: React.FormEvent) => {
@@ -96,11 +158,31 @@ export const SessionView: React.FC = () => {
                 onChange={e => setSelectedSessionId(e.target.value)}
                 className="px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500/20"
               >
-                {sessions.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.date} ({s.timeRange}) — {s.topic}
-                  </option>
-                ))}
+                {mySessions.length > 0 && (
+                  <optgroup label="Занятия моих групп">
+                    {mySessions.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.date} ({s.timeRange}) — {s.topic}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {otherSessions.length > 0 && (
+                  <optgroup label="Другие группы клуба">
+                    {otherSessions.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.date} ({s.timeRange}) — {s.topic}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {mySessions.length === 0 && otherSessions.length === 0 && (
+                  sessions.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.date} ({s.timeRange}) — {s.topic}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -185,12 +267,12 @@ export const SessionView: React.FC = () => {
               </div>
 
               <div className="divide-y divide-slate-100">
-                {athletes.length === 0 ? (
+                {currentSessionAthletes.length === 0 ? (
                   <div className="p-8 text-center text-slate-500 text-sm">
-                    Список спортсменов пуст
+                    В данной группе пока нет активных спортсменов
                   </div>
                 ) : (
-                  athletes.map(athlete => {
+                  currentSessionAthletes.map(athlete => {
                     const status: AttendanceStatus = (currentSession.attendance && currentSession.attendance[athlete.id]) || 'unmarked';
                     const exceptionReason = currentSession.exceptions && currentSession.exceptions[athlete.id];
 
@@ -308,19 +390,29 @@ export const SessionView: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'fact' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <h3 className="font-extrabold text-slate-900 text-base">Фактическое выполнение занятия</h3>
-              <p className="text-xs text-slate-500">
-                Занятие проведено в полном объёме согласно учебно-тренировочному плану группы начальной подготовки.
-              </p>
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
-                <div>Зал: <strong>Самбо №1</strong></div>
-                <div>Тренер: <strong>Иванов А. В.</strong></div>
-                <div>Количество явившихся: <strong>{Object.values(currentSession.attendance).filter(v => v === 'present').length}</strong> из {athletes.length}</div>
+          {activeTab === 'fact' && (() => {
+            const currentGroupObj = groups.find(g => g.id === currentSession.groupId);
+            const coachDisplay = currentGroupObj?.coachName || activeCoach?.fullName || 'Иванов А. В.';
+            const presentCount = currentSessionAthletes.filter(
+              a => currentSession.attendance?.[a.id] === 'present'
+            ).length;
+
+            return (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <h3 className="font-extrabold text-slate-900 text-base">Фактическое выполнение занятия</h3>
+                <p className="text-xs text-slate-500">
+                  Занятие проведено в полном объёме согласно учебно-тренировочному плану группы {currentGroupObj?.name || 'самбо'}.
+                </p>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+                  <div>Зал: <strong>Самбо №1</strong></div>
+                  <div>Тренер: <strong>{coachDisplay}</strong></div>
+                  <div>
+                    Количество явившихся: <strong>{presentCount}</strong> из {currentSessionAthletes.length}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'observations' && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
@@ -405,7 +497,7 @@ export const SessionView: React.FC = () => {
                 onChange={e => setSelectedAthleteForNote(e.target.value)}
                 className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
               >
-                {athletes.map(a => (
+                {currentSessionAthletes.map(a => (
                   <option key={a.id} value={a.id}>
                     {a.shortName} ({a.fullName})
                   </option>
@@ -457,7 +549,12 @@ export const SessionView: React.FC = () => {
 
       {/* Coach Excuse Absence Reason Modal */}
       {excuseTargetAthlete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+        <div
+          onClick={e => {
+            if (e.target === e.currentTarget) setExcuseTargetAthlete(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+        >
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden flex flex-col p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -512,13 +609,19 @@ export const SessionView: React.FC = () => {
               </button>
               <button
                 type="button"
+                disabled={isSubmittingExcuse}
                 onClick={() => {
-                  reportAbsence(excuseTargetAthlete.id, currentSession.id, excuseReasonInput.trim() || 'Уважительная причина');
-                  setExcuseTargetAthlete(null);
+                  setIsSubmittingExcuse(true);
+                  try {
+                    reportAbsence(excuseTargetAthlete.id, currentSession.id, excuseReasonInput.trim() || 'Уважительная причина');
+                    setExcuseTargetAthlete(null);
+                  } finally {
+                    setIsSubmittingExcuse(false);
+                  }
                 }}
-                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shadow-md transition"
               >
-                Подтвердить пропуск
+                {isSubmittingExcuse ? 'Сохранение...' : 'Подтвердить пропуск'}
               </button>
             </div>
           </div>

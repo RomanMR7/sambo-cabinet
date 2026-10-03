@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getDocumentExpiryStatus, calculateFourWeekAttendance } from '../../utils/rules';
 import { DocumentRecord } from '../../types';
@@ -21,10 +21,11 @@ import { UploadDocumentModal } from '../../components/modals/UploadDocumentModal
 import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 
 export const ParentView: React.FC = () => {
-  const { athletes, documents, sessions, tasks, activeNav, setActiveNav, toggleTaskStatus } = useApp();
+  const { athletes, documents, sessions, tasks, activeNav, setActiveNav, toggleTaskStatus, groups } = useApp();
 
   // Strict Data Isolation: Parent sees exclusively Anton K. ('ath-1')
   const child = athletes.find(a => a.id === 'ath-1') || athletes[0];
+  const childGroup = groups.find(g => g.id === child?.groupId);
 
   if (!child) {
     return (
@@ -52,18 +53,33 @@ export const ParentView: React.FC = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
   const [taskFeedbackToast, setTaskFeedbackToast] = useState<string | null>(null);
+  const taskFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (taskFeedbackTimerRef.current) {
+        clearTimeout(taskFeedbackTimerRef.current);
+      }
+    };
+  }, []);
 
   const navTab = activeNav.startsWith('parent_') ? activeNav : 'parent_main';
 
   const handleTaskToggle = (taskId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'active' : 'completed';
     toggleTaskStatus(taskId, nextStatus);
+    if (taskFeedbackTimerRef.current) {
+      clearTimeout(taskFeedbackTimerRef.current);
+    }
     setTaskFeedbackToast(
       nextStatus === 'completed'
         ? 'Задача отмечена как выполненная ребёнком!'
         : 'Статус задачи возвращен в работу.'
     );
-    setTimeout(() => setTaskFeedbackToast(null), 3000);
+    taskFeedbackTimerRef.current = setTimeout(() => {
+      setTaskFeedbackToast(null);
+      taskFeedbackTimerRef.current = null;
+    }, 3000);
   };
 
   return (
@@ -92,7 +108,7 @@ export const ParentView: React.FC = () => {
                 Кабинет родителя
               </span>
               <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.2 rounded border border-emerald-200">
-                Группа 1 (Самбо)
+                {childGroup?.name || 'Группа самбо'}
               </span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 mt-0.5">
@@ -106,7 +122,7 @@ export const ParentView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">
-            Тренер: Иванов А. В.
+            Тренер: {childGroup?.coachName || 'Иванов А. В.'}
           </span>
         </div>
       </div>

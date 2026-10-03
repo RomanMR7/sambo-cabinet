@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ScheduleSlot } from '../../types';
 import { X, Calendar, Save, Trash2, AlertCircle } from 'lucide-react';
@@ -12,12 +12,23 @@ interface Props {
 export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved }) => {
   const { addScheduleSlot, updateScheduleSlot, deleteScheduleSlot } = useApp();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [day, setDay] = useState(slot?.day || 'Вторник');
   const [time, setTime] = useState(slot?.time || '18:00–19:00');
   const [hall, setHall] = useState(slot?.hall || 'Зал самбо №1');
   const [coach, setCoach] = useState(slot?.coach || 'Иванов А. В.');
   const [group, setGroup] = useState(slot?.group || 'Группа 1');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
@@ -51,44 +62,60 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
       return;
     }
 
-    if (slot) {
-      updateScheduleSlot(slot.id, {
-        day: day.trim(),
-        time: time.trim(),
-        hall: hall.trim(),
-        coach: coach.trim(),
-        group: group.trim()
-      });
-    } else {
-      addScheduleSlot({
-        day: day.trim(),
-        time: time.trim(),
-        hall: hall.trim(),
-        coach: coach.trim(),
-        group: group.trim()
-      });
-    }
+    setIsSubmitting(true);
+    try {
+      if (slot) {
+        updateScheduleSlot(slot.id, {
+          day: day.trim(),
+          time: time.trim(),
+          hall: hall.trim(),
+          coach: coach.trim(),
+          group: group.trim()
+        });
+      } else {
+        addScheduleSlot({
+          day: day.trim(),
+          time: time.trim(),
+          hall: hall.trim(),
+          coach: coach.trim(),
+          group: group.trim()
+        });
+      }
 
-    if (onSaved) onSaved();
-    onClose();
+      if (onSaved) onSaved();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = () => {
+    if (isSubmitting) return;
     if (slot && confirm('Удалить этот слот расписания?')) {
-      deleteScheduleSlot(slot.id);
-      if (onSaved) onSaved();
-      onClose();
+      setIsSubmitting(true);
+      try {
+        deleteScheduleSlot(slot.id);
+        if (onSaved) onSaved();
+        onClose();
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div 
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -216,11 +243,14 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
             {slot ? (
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={handleDelete}
-                className="px-3.5 py-2 rounded-xl text-red-600 hover:bg-red-50 text-xs font-bold transition flex items-center gap-1.5"
+                className={`px-3.5 py-2 rounded-xl text-red-600 hover:bg-red-50 text-xs font-bold transition flex items-center gap-1.5 ${
+                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Удалить слот</span>
+                <span>{isSubmitting ? 'Удаление...' : 'Удалить слот'}</span>
               </button>
             ) : <div />}
 
@@ -234,10 +264,13 @@ export const EditScheduleSlotModal: React.FC<Props> = ({ slot, onClose, onSaved 
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-2"
+                disabled={isSubmitting}
+                className={`px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-2 ${
+                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <Save className="w-4 h-4" />
-                <span>Сохранить</span>
+                <span>{isSubmitting ? 'Сохранение...' : 'Сохранить'}</span>
               </button>
             </div>
           </div>

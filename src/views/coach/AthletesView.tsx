@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AddAthleteModal } from '../../components/modals/AddAthleteModal';
 import { EditGroupModal } from '../../components/modals/EditGroupModal';
+import { isCoachForGroup } from '../../utils/rules';
 
 export const AthletesView: React.FC = () => {
   const {
@@ -22,7 +23,9 @@ export const AthletesView: React.FC = () => {
     setSelectedAthleteId,
     groups,
     selectedGroupId,
-    setSelectedGroupId
+    setSelectedGroupId,
+    activeCoachId,
+    clubUsers
   } = useApp();
 
   const [showDetail, setShowDetail] = useState(false);
@@ -31,7 +34,19 @@ export const AthletesView: React.FC = () => {
   const [isAddAthleteOpen, setIsAddAthleteOpen] = useState(false);
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
 
-  const currentGroup = groups.find(g => g.id === selectedGroupId) || groups[0];
+  const activeCoach =
+    (Array.isArray(clubUsers) ? clubUsers : []).find(u => u && u.id === activeCoachId) ||
+    (Array.isArray(clubUsers) ? clubUsers : []).find(u => u && u.role === 'coach');
+
+  const coachGroups = (Array.isArray(groups) ? groups : []).filter(g =>
+    activeCoach && isCoachForGroup(activeCoach, g)
+  );
+
+  const otherGroups = (Array.isArray(groups) ? groups : []).filter(
+    g => !coachGroups.some(cg => cg.id === g.id)
+  );
+
+  const currentGroup = groups.find(g => g.id === selectedGroupId) || coachGroups[0] || groups[0];
 
   const filteredAthletes = athletes.filter(a => {
     // Only active athletes
@@ -116,11 +131,31 @@ export const AthletesView: React.FC = () => {
               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-800 border-none focus:ring-2 focus:ring-red-500/20"
             >
               <option value="all">Все группы клуба</option>
-              {groups.map(g => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
+              {coachGroups.length > 0 && (
+                <optgroup label="Мои группы">
+                  {coachGroups.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {otherGroups.length > 0 && (
+                <optgroup label="Другие группы">
+                  {otherGroups.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {coachGroups.length === 0 && otherGroups.length === 0 && (
+                groups.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

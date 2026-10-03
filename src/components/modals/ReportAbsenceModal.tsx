@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { X, CalendarX, AlertCircle } from 'lucide-react';
 
@@ -10,12 +10,23 @@ interface Props {
 
 export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onClose }) => {
   const { reportAbsence, sessions } = useApp();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(sessionId);
   const session = sessions.find(s => s.id === selectedSessionId) || sessions[0];
 
   const [reasonCategory, setReasonCategory] = useState<'illness' | 'family' | 'custom'>('illness');
   const [comment, setComment] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const validate = (): string | null => {
     if (!selectedSessionId) {
@@ -34,27 +45,37 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
       return;
     }
 
-    let fullReason = '';
-    if (reasonCategory === 'illness') {
-      fullReason = `Болезнь спортсмена (справка будет предоставлена)${comment.trim() ? ': ' + comment.trim() : ''}`;
-    } else if (reasonCategory === 'family') {
-      fullReason = `Заявление родителя (семейные обстоятельства)${comment.trim() ? ': ' + comment.trim() : ''}`;
-    } else {
-      fullReason = comment.trim();
-    }
+    setIsSubmitting(true);
+    try {
+      let fullReason = '';
+      if (reasonCategory === 'illness') {
+        fullReason = `Болезнь спортсмена (справка будет предоставлена)${comment.trim() ? ': ' + comment.trim() : ''}`;
+      } else if (reasonCategory === 'family') {
+        fullReason = `Заявление родителя (семейные обстоятельства)${comment.trim() ? ': ' + comment.trim() : ''}`;
+      } else {
+        fullReason = comment.trim();
+      }
 
-    reportAbsence(athleteId, selectedSessionId, fullReason);
-    onClose();
+      reportAbsence(athleteId, selectedSessionId, fullReason);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn">
+    <div 
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -218,9 +239,12 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition"
+              disabled={isSubmitting}
+              className={`px-5 py-2 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              Передать тренеру
+              {isSubmitting ? 'Передача...' : 'Передать тренеру'}
             </button>
           </div>
         </form>

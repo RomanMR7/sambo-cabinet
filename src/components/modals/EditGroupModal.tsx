@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -36,6 +36,7 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
   const targetGroup = groups.find(g => g.id === currentGroupId) || groups[0];
 
   const [activeTab, setActiveTab] = useState<'params' | 'roster'>('params');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Parameters form state
   const [name, setName] = useState(targetGroup?.name || '');
@@ -43,6 +44,33 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
   const [schedule, setSchedule] = useState(targetGroup?.schedule || '');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
+
+  const triggerSuccessMsg = (msg: string) => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    setSuccessMsg(msg);
+    successTimerRef.current = setTimeout(() => {
+      setSuccessMsg(null);
+      successTimerRef.current = null;
+    }, 3000);
+  };
 
   // Transfer modal state
   const [transferAthleteId, setTransferAthleteId] = useState<string | null>(null);
@@ -68,6 +96,8 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
 
   const handleSaveParams = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (!name.trim() || name.trim().length < 3) {
       setErrorMsg('Укажите название группы (не менее 3 символов).');
       return;
@@ -77,78 +107,119 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
       return;
     }
     if (!schedule.trim() || schedule.trim().length < 3) {
-      setErrorMsg('Укажите расписание тренировок.');
+      setErrorMsg('Укажите расписание тренировок (не менее 3 символов).');
       return;
     }
 
-    if (targetGroup) {
-      updateGroup(targetGroup.id, {
-        name: name.trim(),
-        coachName: coachName.trim(),
-        schedule: schedule.trim()
-      });
+    setIsSubmitting(true);
+    try {
+      if (targetGroup) {
+        updateGroup(targetGroup.id, {
+          name: name.trim(),
+          coachName: coachName.trim(),
+          schedule: schedule.trim()
+        });
+      }
+      triggerSuccessMsg('Параметры группы успешно сохранены!');
+      if (onSaved) onSaved();
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setSuccessMsg('Параметры группы успешно сохранены!');
-    setTimeout(() => setSuccessMsg(null), 3000);
-    if (onSaved) onSaved();
   };
 
   const handleConfirmTransfer = (athleteId: string) => {
-    if (!athleteId || !targetTransferGroupId) return;
-    moveAthleteToGroup(athleteId, targetTransferGroupId);
-    setTransferAthleteId(null);
-    setSuccessMsg('Спортсмен успешно переведен в другую группу!');
-    setTimeout(() => setSuccessMsg(null), 3000);
+    if (isSubmitting) return;
+    const targetId = targetTransferGroupId || otherGroups[0]?.id;
+    if (!athleteId || !targetId) return;
+
+    setIsSubmitting(true);
+    try {
+      moveAthleteToGroup(athleteId, targetId);
+      setTransferAthleteId(null);
+      triggerSuccessMsg('Спортсмен успешно переведен в другую группу!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleExpelAthlete = (athleteId: string, athleteName: string) => {
     if (window.confirm(`Вы действительно хотите отчислить спортсмена ${athleteName} из группы?`)) {
       expelAthlete(athleteId);
-      setSuccessMsg(`Спортсмен ${athleteName} отчислен из состава.`);
-      setTimeout(() => setSuccessMsg(null), 3000);
+      triggerSuccessMsg(`Спортсмен ${athleteName} отчислен из состава.`);
     }
   };
 
   const handleCreateAthlete = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFullName.trim() || newFullName.trim().length < 5) {
+    if (isSubmitting) return;
+
+    const trimmedFull = newFullName.trim();
+    if (!trimmedFull || trimmedFull.length < 5) {
       setNewAthleteError('Укажите полные ФИО спортсмена (не менее 5 символов).');
       return;
     }
 
-    const parts = newFullName.trim().split(/\s+/);
-    const shortName = parts.length > 1 ? `${parts[1]} ${parts[0][0]}.` : newFullName.trim();
+    if (!newBirthDate) {
+      setNewAthleteError('Укажите дату рождения спортсмена.');
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (newBirthDate > todayStr) {
+      setNewAthleteError('Дата рождения не может быть в будущем.');
+      return;
+    }
+    if (newBirthDate < '1920-01-01') {
+      setNewAthleteError('Укажите корректную дату рождения.');
+      return;
+    }
 
-    addAthleteToGroup({
-      fullName: newFullName.trim(),
-      shortName,
-      groupId: targetGroup.id,
-      isActive: true,
-      birthDate: newBirthDate,
-      parentName: newParentName.trim() || 'Родитель спортсмена',
-      parentPhone: newParentPhone.trim() || '+7 (999) 000-00-00',
-      athletePhone: newAthletePhone.trim() || '',
-      admissionDecision: {
-        status: 'pending',
-        basis: 'Новый спортсмен, ожидает медзаключения',
-        reviewedAt: new Date().toISOString().slice(0, 10),
-        reviewedBy: targetGroup.coachName || 'Тренер'
-      }
-    });
+    const trimmedParent = newParentName.trim() || 'Родитель спортсмена';
+    const trimmedParentPhone = newParentPhone.trim();
+    if (trimmedParentPhone && trimmedParentPhone !== '+7 (' && trimmedParentPhone.length < 7) {
+      setNewAthleteError('Телефон родителя должен содержать не менее 7 знаков.');
+      return;
+    }
+    const finalParentPhone = (trimmedParentPhone && trimmedParentPhone !== '+7 (') ? trimmedParentPhone : '+7 (999) 000-00-00';
 
-    setNewFullName('');
-    setNewParentName('');
-    setNewParentPhone('+7 (');
-    setNewAthletePhone('');
-    setIsAddingAthlete(false);
-    setNewAthleteError(null);
-    setSuccessMsg('Спортсмен успешно добавлен в состав группы!');
-    setTimeout(() => setSuccessMsg(null), 3000);
+    const parts = trimmedFull.split(/\s+/);
+    const shortName = parts.length > 1 ? `${parts[1]} ${parts[0][0]}.` : trimmedFull;
+
+    setIsSubmitting(true);
+    try {
+      addAthleteToGroup({
+        fullName: trimmedFull,
+        shortName,
+        groupId: targetGroup.id,
+        isActive: true,
+        birthDate: newBirthDate,
+        parentName: trimmedParent,
+        parentPhone: finalParentPhone,
+        athletePhone: newAthletePhone.trim() || '',
+        admissionDecision: {
+          status: 'pending',
+          basis: 'Новый спортсмен, ожидает медзаключения',
+          reviewedAt: new Date().toISOString().slice(0, 10),
+          reviewedBy: targetGroup.coachName || 'Тренер'
+        }
+      });
+
+      setNewFullName('');
+      setNewParentName('');
+      setNewParentPhone('+7 (');
+      setNewAthletePhone('');
+      setIsAddingAthlete(false);
+      setNewAthleteError(null);
+      triggerSuccessMsg('Спортсмен успешно добавлен в состав группы!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div 
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -293,10 +364,13 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-1.5"
+                  disabled={isSubmitting}
+                  className={`px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-1.5 ${
+                    isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   <Save className="w-4 h-4" />
-                  <span>Сохранить изменения</span>
+                  <span>{isSubmitting ? 'Сохранение...' : 'Сохранить изменения'}</span>
                 </button>
               </div>
             </form>
@@ -419,9 +493,12 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+                      disabled={isSubmitting}
+                      className={`px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition ${
+                        isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      Зачислить в группу
+                      {isSubmitting ? 'Зачисление...' : 'Зачислить в группу'}
                     </button>
                   </div>
                 </form>
@@ -517,10 +594,13 @@ export const EditGroupModal: React.FC<Props> = ({ groupId, onClose, onSaved }) =
                             </select>
                             <button
                               type="button"
+                              disabled={isSubmitting}
                               onClick={() => handleConfirmTransfer(ath.id)}
-                              className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold shrink-0 transition"
+                              className={`px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold shrink-0 transition ${
+                                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                             >
-                              Подтвердить перевод
+                              {isSubmitting ? 'Перевод...' : 'Подтвердить перевод'}
                             </button>
                             <button
                               type="button"

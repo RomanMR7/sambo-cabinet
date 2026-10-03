@@ -147,7 +147,12 @@ export function calculateFourWeekAttendance(
     let excusedCount = 0;
     let unmarkedCount = 0;
 
-    safeSessions.forEach(session => {
+    // Filter sessions belonging to this athlete's group (or global sessions without groupId)
+    const athleteSessions = safeSessions.filter(
+      s => !s.groupId || !athlete.groupId || s.groupId === athlete.groupId
+    );
+
+    athleteSessions.forEach(session => {
       const attendanceMap = session?.attendance || {};
       const status: AttendanceStatus = attendanceMap[athlete.id] ?? 'unmarked';
       if (status === 'present') presentCount++;
@@ -156,7 +161,7 @@ export function calculateFourWeekAttendance(
       else if (status === 'unmarked') unmarkedCount++;
     });
 
-    const totalSessions = safeSessions.length;
+    const totalSessions = athleteSessions.length;
     // Effective base E: sessions minus excused
     const effectiveBaseE = Math.max(0, totalSessions - excusedCount);
     const safePresent = Math.max(0, presentCount);
@@ -494,3 +499,49 @@ export function filterTasksForRole(
   }
   return tasks;
 }
+
+/**
+ * Returns formatted short name for coach (e.g. "Иванов Алексей Васильевич" -> "Иванов А. В.")
+ */
+export function getCoachShortName(fullName?: string): string {
+  if (!fullName || typeof fullName !== 'string') return '';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length >= 3) {
+    return `${parts[0]} ${parts[1][0]}. ${parts[2][0]}.`;
+  }
+  if (parts.length === 2) {
+    return `${parts[0]} ${parts[1][0]}.`;
+  }
+  return fullName;
+}
+
+/**
+ * Robustly matches a coach with a group based on fullName, short name, or surname.
+ */
+export function isCoachForGroup(
+  coach: { fullName: string },
+  group: { coachName?: string }
+): boolean {
+  if (!coach || !coach.fullName || !group || !group.coachName) return false;
+  const target = group.coachName.trim();
+  if (target === coach.fullName.trim()) return true;
+
+  const coachShort = getCoachShortName(coach.fullName);
+  if (coachShort && target === coachShort) return true;
+
+  const noSpaceShort = coachShort.replace(/\. /g, '.');
+  if (target === noSpaceShort) return true;
+
+  const parts = coach.fullName.trim().split(/\s+/);
+  const surname = parts[0];
+  if (surname && target.startsWith(surname)) {
+    // Check initial if available
+    const init = parts[1]?.[0];
+    if (init) {
+      return target.includes(init);
+    }
+    return true;
+  }
+  return false;
+}
+

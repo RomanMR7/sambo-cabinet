@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Athlete } from '../../types';
 import { X, UserCheck, Save, AlertCircle } from 'lucide-react';
@@ -12,6 +12,7 @@ interface Props {
 export const EditAthleteModal: React.FC<Props> = ({ athlete, onClose, onSaved }) => {
   const { updateAthlete } = useApp();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullName, setFullName] = useState(athlete.fullName);
   const [shortName, setShortName] = useState(athlete.shortName);
   const [birthDate, setBirthDate] = useState(athlete.birthDate || '2015-05-10');
@@ -20,6 +21,16 @@ export const EditAthleteModal: React.FC<Props> = ({ athlete, onClose, onSaved })
   const [athletePhone, setAthletePhone] = useState(athlete.athletePhone);
   const [isActive, setIsActive] = useState(athlete.isActive);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const validate = (): string | null => {
     const trimmedFull = fullName.trim();
@@ -63,28 +74,38 @@ export const EditAthleteModal: React.FC<Props> = ({ athlete, onClose, onSaved })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const err = validate();
     if (err) {
       setErrorMsg(err);
       return;
     }
 
-    updateAthlete(athlete.id, {
-      fullName: fullName.trim(),
-      shortName: shortName.trim(),
-      birthDate,
-      parentName: parentName.trim(),
-      parentPhone: parentPhone.trim(),
-      athletePhone: athletePhone.trim() || '',
-      isActive
-    });
+    setIsSubmitting(true);
+    try {
+      updateAthlete(athlete.id, {
+        fullName: fullName.trim(),
+        shortName: shortName.trim(),
+        birthDate,
+        parentName: parentName.trim(),
+        parentPhone: parentPhone.trim(),
+        athletePhone: athletePhone.trim() || '',
+        isActive
+      });
 
-    if (onSaved) onSaved();
-    onClose();
+      if (onSaved) onSaved();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div 
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -245,10 +266,13 @@ export const EditAthleteModal: React.FC<Props> = ({ athlete, onClose, onSaved })
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-2"
+              disabled={isSubmitting}
+              className={`px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-2 ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <Save className="w-4 h-4" />
-              <span>Сохранить изменения</span>
+              <span>{isSubmitting ? 'Сохранение...' : 'Сохранить изменения'}</span>
             </button>
           </div>
         </form>

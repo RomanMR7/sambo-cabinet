@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Clock,
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export const AthleteView: React.FC = () => {
-  const { athletes, sessions, tasks, competitions, activeNav, setActiveNav, toggleTaskStatus } = useApp();
+  const { athletes, sessions, tasks, competitions, activeNav, setActiveNav, toggleTaskStatus, groups } = useApp();
 
   // Anton K. ('ath-1')
   const me = athletes.find(a => a.id === 'ath-1') || athletes[0];
@@ -28,6 +28,7 @@ export const AthleteView: React.FC = () => {
     );
   }
 
+  const myGroup = groups.find(g => g.id === me.groupId);
   const myTasks = tasks.filter(t => t.athleteId === me.id && t.publishedToFamily);
   const activeTask = myTasks.find(t => t.status === 'active') || myTasks[0];
   const completedTask = myTasks.find(t => t.status === 'completed');
@@ -37,18 +38,43 @@ export const AthleteView: React.FC = () => {
 
   const [activeModalText, setActiveModalText] = useState<{ title: string; content: string } | null>(null);
   const [taskFeedbackToast, setTaskFeedbackToast] = useState<string | null>(null);
+  const taskFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (taskFeedbackTimerRef.current) {
+        clearTimeout(taskFeedbackTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activeModalText) {
+        setActiveModalText(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeModalText]);
 
   const navTab = activeNav.startsWith('athlete_') ? activeNav : 'athlete_main';
 
   const handleTaskToggle = (taskId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'completed' ? 'active' : 'completed';
     toggleTaskStatus(taskId, nextStatus);
+    if (taskFeedbackTimerRef.current) {
+      clearTimeout(taskFeedbackTimerRef.current);
+    }
     setTaskFeedbackToast(
       nextStatus === 'completed'
         ? 'Отлично! Задание отмечено выполненным.'
         : 'Задание возвращено в активные.'
     );
-    setTimeout(() => setTaskFeedbackToast(null), 3000);
+    taskFeedbackTimerRef.current = setTimeout(() => {
+      setTaskFeedbackToast(null);
+      taskFeedbackTimerRef.current = null;
+    }, 3000);
   };
 
   return (
@@ -66,7 +92,12 @@ export const AthleteView: React.FC = () => {
       )}
 
       {activeModalText && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+        <div
+          onClick={e => {
+            if (e.target === e.currentTarget) setActiveModalText(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+        >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <h3 className="font-extrabold text-base text-slate-900">{activeModalText.title}</h3>
             <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{activeModalText.content}</p>
@@ -101,14 +132,14 @@ export const AthleteView: React.FC = () => {
               Мой кабинет: {me.fullName}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Группа 1 • Весовая категория до 42 кг
+              {myGroup?.name || 'Группа 1'} • Весовая категория до 42 кг
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">
-            Тренер: Иванов А. В.
+            Тренер: {myGroup?.coachName || 'Иванов А. В.'}
           </span>
         </div>
       </div>

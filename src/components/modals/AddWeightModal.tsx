@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { X, Scale, Save, AlertCircle } from 'lucide-react';
 
@@ -16,6 +16,17 @@ export const AddWeightModal: React.FC<Props> = ({ athleteId, athleteName, onClos
   const [weightKg, setWeightKg] = useState('38.5');
   const [context, setContext] = useState('Перед утренней тренировкой');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const contextPresets = [
     'Перед утренней тренировкой',
@@ -57,20 +68,30 @@ export const AddWeightModal: React.FC<Props> = ({ athleteId, athleteName, onClos
       return;
     }
 
-    const val = parseFloat(weightKg);
-    addWeight({
-      athleteId,
-      date,
-      weightKg: Math.round(val * 10) / 10,
-      context: context.trim() || 'Взвешивание в зале'
-    });
+    setIsSubmitting(true);
+    try {
+      const val = parseFloat(weightKg);
+      addWeight({
+        athleteId,
+        date,
+        weightKg: Math.round(val * 10) / 10,
+        context: context.trim() || 'Взвешивание в зале'
+      });
 
-    if (onSaved) onSaved();
-    onClose();
+      if (onSaved) onSaved();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -193,10 +214,11 @@ export const AddWeightModal: React.FC<Props> = ({ athleteId, athleteName, onClos
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-2"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-red-900/20 transition flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              <span>Сохранить в дневник</span>
+              <span>{isSubmitting ? 'Сохранение...' : 'Сохранить в дневник'}</span>
             </button>
           </div>
         </form>

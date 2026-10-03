@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DocumentRecord } from '../../types';
 import {
@@ -33,6 +33,16 @@ export const VerifierView: React.FC = () => {
   const [verifierComment, setVerifierComment] = useState('');
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   const [warningMsg, setWarningMsg] = useState<string | null>(null);
 
   // Queue of unverified docs
@@ -45,6 +55,9 @@ export const VerifierView: React.FC = () => {
   const handleVerify = () => {
     if (!selectedDoc) return;
     verifyDocument(selectedDoc.id, 'verified', verifierComment);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setSuccessToast(`Документ «${selectedDoc.title}» (${selectedAthlete?.shortName}) успешно подтверждён!`);
     setVerifierComment('');
     setWarningMsg(null);
@@ -52,7 +65,10 @@ export const VerifierView: React.FC = () => {
     if (nextDoc) {
       setSelectedDocId(nextDoc.id);
     }
-    setTimeout(() => setSuccessToast(null), 3500);
+    toastTimerRef.current = setTimeout(() => {
+      setSuccessToast(null);
+      toastTimerRef.current = null;
+    }, 3500);
   };
 
   const handleRemarks = () => {
@@ -62,13 +78,19 @@ export const VerifierView: React.FC = () => {
       return;
     }
     verifyDocument(selectedDoc.id, 'has_remarks', verifierComment);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setSuccessToast(`Замечание к документу «${selectedDoc.title}» зафиксировано.`);
     setWarningMsg(null);
     const nextDoc = queueDocs.find(d => d.id !== selectedDoc.id);
     if (nextDoc) {
       setSelectedDocId(nextDoc.id);
     }
-    setTimeout(() => setSuccessToast(null), 3500);
+    toastTimerRef.current = setTimeout(() => {
+      setSuccessToast(null);
+      toastTimerRef.current = null;
+    }, 3500);
   };
 
   return (

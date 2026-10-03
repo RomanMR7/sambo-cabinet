@@ -15,7 +15,9 @@ import {
   filterAthletesForRole,
   filterTasksForRole,
   parseDateUtc,
-  DEMO_TODAY
+  DEMO_TODAY,
+  getCoachShortName,
+  isCoachForGroup
 } from '../rules';
 import { Athlete, TrainingSession, DocumentRecord, IndividualTask } from '../../types';
 
@@ -504,6 +506,11 @@ describe('Ролевая безопасность и изоляция данны
     expect(parentDocs.length).toBe(2);
     expect(parentDocs.every(d => d.athleteId === 'ath-1')).toBe(true);
 
+    // Прямой доступ к чужому документу строго запрещен
+    expect(isDocumentAccessibleForRole(mockDocs[2], 'parent', 'ath-1')).toBe(false);
+    expect(isDocumentAccessibleForRole(mockDocs[0], 'parent', 'ath-1')).toBe(true);
+    expect(isDocumentAccessibleForRole(mockDocs[0], 'parent')).toBe(false);
+
     // Задания: видит ТОЛЬКО задания своего ребенка и ТОЛЬКО опубликованные для семьи
     const parentTasks = filterTasksForRole(mockTasks, 'parent', 'ath-1');
     expect(parentTasks.length).toBe(1);
@@ -524,6 +531,11 @@ describe('Ролевая безопасность и изоляция данны
     // Документы изолированы
     const athleteDocs = filterDocumentsForRole(mockDocs, 'athlete', 'ath-1');
     expect(athleteDocs.every(d => d.athleteId === 'ath-1')).toBe(true);
+
+    // Прямой доступ к чужим документам запрещен
+    expect(isDocumentAccessibleForRole(mockDocs[2], 'athlete', 'ath-1')).toBe(false);
+    expect(isDocumentAccessibleForRole(mockDocs[0], 'athlete', 'ath-1')).toBe(true);
+    expect(isDocumentAccessibleForRole(mockDocs[0], 'athlete')).toBe(false);
 
     // Задачи изолированы
     const athleteTasks = filterTasksForRole(mockTasks, 'athlete', 'ath-1');
@@ -637,5 +649,56 @@ describe('Надежность и граничные случаи (parseDateUtc,
     expect(filterAthletesForRole(null as any, 'coach')).toEqual([]);
     expect(filterTasksForRole(null as any, 'coach')).toEqual([]);
   });
+
+  it('7. Форматирование ФИО тренера и сопоставление с группами', () => {
+    expect(getCoachShortName('Иванов Алексей Васильевич')).toBe('Иванов А. В.');
+    expect(getCoachShortName('Петров Сергей Николаевич')).toBe('Петров С. Н.');
+    expect(getCoachShortName('Сидоров Петр')).toBe('Сидоров П.');
+    expect(getCoachShortName('')).toBe('');
+
+    const coachIvanov = { fullName: 'Иванов Алексей Васильевич' };
+    const coachPetrov = { fullName: 'Петров Сергей Николаевич' };
+
+    expect(isCoachForGroup(coachIvanov, { coachName: 'Иванов А. В.' })).toBe(true);
+    expect(isCoachForGroup(coachIvanov, { coachName: 'Иванов А.В.' })).toBe(true);
+    expect(isCoachForGroup(coachIvanov, { coachName: 'Иванов Алексей Васильевич' })).toBe(true);
+    expect(isCoachForGroup(coachIvanov, { coachName: 'Петров С. Н.' })).toBe(false);
+
+    expect(isCoachForGroup(coachPetrov, { coachName: 'Петров С. Н.' })).toBe(true);
+    expect(isCoachForGroup(coachPetrov, { coachName: 'Иванов А. В.' })).toBe(false);
+  });
+
+  it('8. Изоляция тренировок по группам в calculateFourWeekAttendance', () => {
+    const athleteGrp1 = createMockAthlete('ath-1', 'Антон Кузнецов', 'Антон К.');
+    athleteGrp1.groupId = 'grp-1';
+
+    // 4 sessions in grp-1 (all present)
+    const grp1Sessions: TrainingSession[] = [
+      createMockSession('s1', '2026-09-10', { 'ath-1': 'present' }),
+      createMockSession('s2', '2026-09-12', { 'ath-1': 'present' }),
+      createMockSession('s3', '2026-09-15', { 'ath-1': 'present' }),
+      createMockSession('s4', '2026-09-17', { 'ath-1': 'present' })
+    ];
+
+    // 2 sessions in grp-2 (where ath-1 is NOT marked)
+    const grp2Sessions: TrainingSession[] = [
+      { ...createMockSession('s5', '2026-09-20', {}), groupId: 'grp-2' },
+      { ...createMockSession('s6', '2026-09-22', {}), groupId: 'grp-2' }
+    ];
+
+    // Combined sessions
+    const allSessions = [...grp1Sessions, ...grp2Sessions];
+    const results = calculateFourWeekAttendance([athleteGrp1], allSessions);
+    const row = results[0];
+
+    // ath-1 should only evaluate 4 sessions from grp-1, with 0 unmarked and 100% rate
+    expect(row.totalSessions).toBe(4);
+    expect(row.presentCount).toBe(4);
+    expect(row.unmarkedCount).toBe(0);
+    expect(row.isBlockedByUnmarked).toBe(false);
+    expect(row.ratePercent).toBe(100);
+    expect(row.statusBadge).toBe('ranked');
+  });
 });
+
 

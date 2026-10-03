@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Role,
+  DocType,
   Athlete,
   DocumentRecord,
   TrainingSession,
@@ -34,6 +35,7 @@ import {
   initialClubUsers,
   initialExercises
 } from '../data/seedData';
+import { isCoachForGroup, getCoachShortName } from '../utils/rules';
 
 const STORAGE_KEY = 'sambo_cabinet_state_v1';
 
@@ -96,6 +98,7 @@ function safeRemoveItem(key: string): void {
 
 export interface AppState {
   role: Role;
+  activeCoachId: string;
   athletes: Athlete[];
   documents: DocumentRecord[];
   sessions: TrainingSession[];
@@ -120,6 +123,7 @@ export interface AppContextType extends AppState {
   storageError: string | null;
   clearStorageError: () => void;
   setRole: (role: Role) => void;
+  setActiveCoachId: (coachId: string) => void;
   setActiveNav: (nav: string) => void;
   setSelectedAthleteId: (id: string) => void;
   setSelectedSessionId: (id: string) => void;
@@ -141,6 +145,10 @@ export interface AppContextType extends AppState {
   updateGroupInfo: (info: Partial<GroupInfo>) => void;
   addCompetition: (comp: Omit<Competition, 'id'>) => void;
   addCompetitionParticipant: (competitionId: string, athleteId: string, category: string, nextGoal?: string) => void;
+  addCompetitionParticipants: (
+    competitionId: string,
+    participants: Array<{ athleteId: string; category: string; nextGoal?: string }>
+  ) => void;
   addScheduleSlot: (slot: Omit<ScheduleSlot, 'id'>) => void;
   updateScheduleSlot: (slotId: string, slot: Partial<ScheduleSlot>) => void;
   deleteScheduleSlot: (slotId: string) => void;
@@ -178,6 +186,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 function getDefaultState(): AppState {
   return {
     role: 'coach',
+    activeCoachId: 'usr-2',
     athletes: initialAthletes,
     documents: initialDocuments,
     sessions: initialSessions,
@@ -217,6 +226,11 @@ function getValidatedState(raw: any): AppState {
         .filter((a: any) => a && typeof a === 'object' && typeof a.id === 'string' && typeof a.fullName === 'string')
         .map((a: any) => ({
           ...a,
+          groupId: typeof a.groupId === 'string' && a.groupId ? a.groupId : 'grp-1',
+          isActive: typeof a.isActive === 'boolean' ? a.isActive : true,
+          parentName: typeof a.parentName === 'string' ? a.parentName : '',
+          parentPhone: typeof a.parentPhone === 'string' ? a.parentPhone : '',
+          athletePhone: typeof a.athletePhone === 'string' ? a.athletePhone : '',
           shortName: typeof a.shortName === 'string' && a.shortName ? a.shortName : (a.fullName || '').slice(0, 10),
           avatarInitials: typeof a.avatarInitials === 'string' && a.avatarInitials ? a.avatarInitials : 'СА',
           admissionDecision: (a.admissionDecision && typeof a.admissionDecision === 'object' && typeof a.admissionDecision.status === 'string')
@@ -226,9 +240,24 @@ function getValidatedState(raw: any): AppState {
     : defaults.athletes;
   const safeAthletes: Athlete[] = athletes.length > 0 ? athletes : defaults.athletes;
 
-  // Validate documents
+  // Validate documents with deep sanitization
   const documents = (Array.isArray(raw.documents) && raw.documents.length > 0)
-    ? raw.documents.filter((d: any) => d && typeof d === 'object' && typeof d.id === 'string' && typeof d.title === 'string')
+    ? raw.documents
+        .filter((d: any) => d && typeof d === 'object' && typeof d.id === 'string' && typeof d.title === 'string')
+        .map((d: any) => ({
+          ...d,
+          athleteId: typeof d.athleteId === 'string' ? d.athleteId : 'ath-1',
+          type: (['medical', 'insurance', 'consent'].includes(d.type) ? d.type : 'medical') as DocType,
+          fileName: typeof d.fileName === 'string' ? d.fileName : 'Документ.pdf',
+          uploadDate: typeof d.uploadDate === 'string' ? d.uploadDate : '2026-10-06',
+          version: typeof d.version === 'number' && d.version > 0 ? d.version : 1,
+          verificationStatus: (['unverified', 'verified', 'has_remarks'].includes(d.verificationStatus)
+            ? d.verificationStatus
+            : 'unverified') as VerificationStatus,
+          isRestrictedMedical: typeof d.isRestrictedMedical === 'boolean'
+            ? d.isRestrictedMedical
+            : (d.type === 'medical')
+        }))
     : defaults.documents;
   const safeDocuments: DocumentRecord[] = documents.length > 0 ? documents : defaults.documents;
 
@@ -236,6 +265,12 @@ function getValidatedState(raw: any): AppState {
   const sessions = (Array.isArray(raw.sessions) && raw.sessions.length > 0)
     ? raw.sessions.filter((s: any) => s && typeof s === 'object' && typeof s.id === 'string').map((s: any) => ({
         ...s,
+        groupId: typeof s.groupId === 'string' ? s.groupId : 'grp-1',
+        date: typeof s.date === 'string' ? s.date : '2026-10-06',
+        timeRange: typeof s.timeRange === 'string' ? s.timeRange : '18:00–19:30',
+        topic: typeof s.topic === 'string' ? s.topic : 'Тренировочное занятие',
+        isCompleted: typeof s.isCompleted === 'boolean' ? s.isCompleted : false,
+        plan: Array.isArray(s.plan) ? s.plan : [],
         attendance: (s.attendance && typeof s.attendance === 'object') ? s.attendance : {},
         exceptions: (s.exceptions && typeof s.exceptions === 'object') ? s.exceptions : {},
         notes: Array.isArray(s.notes) ? s.notes : []
@@ -245,7 +280,13 @@ function getValidatedState(raw: any): AppState {
 
   // Validate tasks
   const tasks = Array.isArray(raw.tasks)
-    ? raw.tasks.filter((t: any) => t && typeof t === 'object' && typeof t.id === 'string')
+    ? raw.tasks
+        .filter((t: any) => t && typeof t === 'object' && typeof t.id === 'string')
+        .map((t: any) => ({
+          ...t,
+          status: ['active', 'completed', 'needs_review'].includes(t.status) ? t.status : 'active',
+          publishedToFamily: typeof t.publishedToFamily === 'boolean' ? t.publishedToFamily : false
+        }))
     : defaults.tasks;
 
   // Validate skills
@@ -272,7 +313,18 @@ function getValidatedState(raw: any): AppState {
   const competitions = (Array.isArray(raw.competitions) && raw.competitions.length > 0)
     ? raw.competitions.filter((c: any) => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.title === 'string').map((c: any) => ({
         ...c,
-        participants: Array.isArray(c.participants) ? c.participants : []
+        participants: Array.isArray(c.participants)
+          ? c.participants
+              .filter((p: any) => p && typeof p === 'object' && typeof p.athleteId === 'string')
+              .map((p: any) => ({
+                athleteId: p.athleteId,
+                category: typeof p.category === 'string' && p.category.trim() ? p.category.trim() : 'Основная категория',
+                admissionDecision: ['admitted', 'not_admitted', 'pending'].includes(p.admissionDecision)
+                  ? p.admissionDecision
+                  : 'pending',
+                nextGoal: typeof p.nextGoal === 'string' && p.nextGoal.trim() ? p.nextGoal.trim() : undefined
+              }))
+          : []
       }))
     : defaults.competitions;
 
@@ -298,6 +350,12 @@ function getValidatedState(raw: any): AppState {
     : defaults.clubUsers;
   const safeClubUsers: ClubUser[] = clubUsers.length > 0 ? clubUsers : defaults.clubUsers;
 
+  // Validate activeCoachId: must belong to a coach in clubUsers, fallback to first coach or defaults
+  const coachUsers = safeClubUsers.filter(u => u.role === 'coach');
+  const safeActiveCoachId = (typeof raw?.activeCoachId === 'string' && coachUsers.some(u => u.id === raw.activeCoachId))
+    ? raw.activeCoachId
+    : (coachUsers[0]?.id || defaults.activeCoachId || 'usr-2');
+
   // Validate exercises
   const exercises = (Array.isArray(raw.exercises) && raw.exercises.length > 0)
     ? raw.exercises.filter((e: any) => e && typeof e === 'object' && typeof e.id === 'string' && typeof e.title === 'string')
@@ -318,6 +376,7 @@ function getValidatedState(raw: any): AppState {
 
   return {
     role,
+    activeCoachId: safeActiveCoachId,
     athletes: safeAthletes,
     documents: safeDocuments,
     sessions: safeSessions,
@@ -380,13 +439,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          const validated = getValidatedState(parsed);
-          setState(validated);
-        } catch {
-          // Ignore unparseable external changes
+      if (e.key === STORAGE_KEY) {
+        if (e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            const validated = getValidatedState(parsed);
+            setState(prev => ({
+              ...validated,
+              activeNav: prev.activeNav,
+              selectedAthleteId: validated.athletes.some(a => a.id === prev.selectedAthleteId)
+                ? prev.selectedAthleteId
+                : validated.selectedAthleteId,
+              selectedSessionId: validated.sessions.some(s => s.id === prev.selectedSessionId)
+                ? prev.selectedSessionId
+                : validated.selectedSessionId
+            }));
+          } catch {
+            // Ignore unparseable external changes
+          }
+        } else {
+          // Storage was cleared/reset in another tab: reset to defaults cleanly
+          setState(getDefaultState());
         }
       }
     };
@@ -394,7 +467,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const setRole = (role: Role) => {
+  const setRole = useCallback((role: Role) => {
     if (!role) return;
     const defaultNavForRole: Record<Role, string> = {
       coach: 'today',
@@ -406,24 +479,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState(prev => ({
       ...prev,
       role,
+      // 152-FZ: strictly reset to personal athlete profile on switching to athlete/parent
+      selectedAthleteId: (role === 'athlete' || role === 'parent') ? 'ath-1' : prev.selectedAthleteId,
       activeNav: defaultNavForRole[role] || 'today'
     }));
-  };
+  }, []);
 
-  const setActiveNav = (nav: string) => {
+  const setActiveCoachId = useCallback((coachId: string) => {
+    if (!coachId) return;
+    setState(prev => {
+      const coach = (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).find(u => u && u.id === coachId);
+      if (!coach) return prev;
+      const coachGroup = (Array.isArray(prev.groups) ? prev.groups : []).find(g =>
+        g && isCoachForGroup(coach, g)
+      );
+      const coachSession = coachGroup
+        ? (Array.isArray(prev.sessions) ? prev.sessions : []).find(s => s && s.groupId === coachGroup.id)
+        : null;
+      return {
+        ...prev,
+        activeCoachId: coachId,
+        selectedGroupId: coachGroup ? coachGroup.id : prev.selectedGroupId,
+        selectedSessionId: coachSession ? coachSession.id : prev.selectedSessionId
+      };
+    });
+  }, []);
+
+  const setActiveNav = useCallback((nav: string) => {
     if (typeof nav !== 'string' || !nav) return;
     setState(prev => ({ ...prev, activeNav: nav }));
-  };
+  }, []);
 
-  const setSelectedAthleteId = (id: string) => {
+  const setSelectedAthleteId = useCallback((id: string) => {
     if (!id || typeof id !== 'string') return;
-    setState(prev => ({ ...prev, selectedAthleteId: id }));
-  };
+    setState(prev => {
+      // 152-FZ: Parent and Athlete roles are strictly isolated to their own child/profile
+      if ((prev.role === 'athlete' || prev.role === 'parent') && id !== 'ath-1') {
+        return prev;
+      }
+      return { ...prev, selectedAthleteId: id };
+    });
+  }, []);
 
-  const setSelectedSessionId = (id: string) => {
+  const setSelectedSessionId = useCallback((id: string) => {
     if (!id || typeof id !== 'string') return;
     setState(prev => ({ ...prev, selectedSessionId: id }));
-  };
+  }, []);
 
   const updateAttendance = (sessionId: string, athleteId: string, status: AttendanceStatus) => {
     if (!sessionId || !athleteId || !status) return;
@@ -431,12 +532,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!Array.isArray(prev.sessions)) return prev;
       const updatedSessions: TrainingSession[] = prev.sessions.map(s => {
         if (s && s.id === sessionId) {
+          const newAttendance = {
+            ...(s.attendance || {}),
+            [athleteId]: status
+          };
+          const newExceptions = { ...(s.exceptions || {}) };
+          if (status !== 'excused') {
+            delete newExceptions[athleteId];
+          }
           return {
             ...s,
-            attendance: {
-              ...(s.attendance || {}),
-              [athleteId]: status
-            }
+            attendance: newAttendance,
+            exceptions: newExceptions
           };
         }
         return s;
@@ -477,16 +584,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const session = prev.sessions.find(s => s && s.id === sessionId);
       if (!session) return prev;
 
+      const targetAthletes = prev.athletes.filter(
+        a => a && a.id && (!session.groupId || a.groupId === session.groupId) && a.isActive !== false
+      );
+
       const newAttendance: Record<string, AttendanceStatus> = { ...(session.attendance || {}) };
-      prev.athletes.forEach(a => {
-        if (a && a.id) {
-          newAttendance[a.id] = 'present';
-        }
+      const newExceptions: Record<string, string> = { ...(session.exceptions || {}) };
+
+      targetAthletes.forEach(a => {
+        newAttendance[a.id] = 'present';
+        delete newExceptions[a.id];
       });
 
       const updatedSessions: TrainingSession[] = prev.sessions.map(s => {
         if (s && s.id === sessionId) {
-          return { ...s, attendance: newAttendance };
+          return { ...s, attendance: newAttendance, exceptions: newExceptions };
         }
         return s;
       });
@@ -551,9 +663,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const uploadDocument = (athleteId: string, doc: Partial<DocumentRecord>) => {
+  const uploadDocument = useCallback((athleteId: string, doc: Partial<DocumentRecord>) => {
     if (!athleteId || !doc) return;
     setState(prev => {
+      // 152-FZ: Parent and Athlete can only upload documents for their own athlete ('ath-1')
+      if ((prev.role === 'parent' || prev.role === 'athlete') && athleteId !== 'ath-1') {
+        return prev;
+      }
+      // 152-FZ: Admin has no clearance to manage medical files
+      if (prev.role === 'admin' && doc.type === 'medical') {
+        return prev;
+      }
+
       const docs = Array.isArray(prev.documents) ? prev.documents : [];
       const existingIndex = docs.findIndex(
         d => d && d.athleteId === athleteId && d.type === doc.type
@@ -597,7 +718,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return { ...prev, documents: newDocList };
     });
-  };
+  }, []);
 
   const addObservationTask = (taskData: Omit<IndividualTask, 'id'>) => {
     if (!taskData) return;
@@ -704,33 +825,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const updateAthlete = (athleteId: string, data: Partial<Athlete>) => {
+  const updateAthlete = useCallback((athleteId: string, data: Partial<Athlete>) => {
     if (!athleteId || !data) return;
-    setState(prev => ({
-      ...prev,
-      athletes: (Array.isArray(prev.athletes) ? prev.athletes : []).map(a =>
-        a && a.id === athleteId ? { ...a, ...data } : a
-      )
-    }));
-  };
+    setState(prev => {
+      // 152-FZ: Parent and Athlete cannot edit other athletes
+      if ((prev.role === 'parent' || prev.role === 'athlete') && athleteId !== 'ath-1') {
+        return prev;
+      }
+      return {
+        ...prev,
+        athletes: (Array.isArray(prev.athletes) ? prev.athletes : []).map(a =>
+          a && a.id === athleteId ? { ...a, ...data } : a
+        )
+      };
+    });
+  }, []);
 
   const addAthlete = (athleteData: Omit<Athlete, 'id' | 'avatarInitials'>) => {
     if (!athleteData || !athleteData.fullName) return;
     const parts = athleteData.fullName.trim().split(/\s+/);
     const initials = parts.map(p => p[0]?.toUpperCase() || '').slice(0, 2).join('') || 'СА';
-    const newAthlete: Athlete = {
-      ...athleteData,
-      id: `ath-${Date.now()}`,
-      avatarInitials: initials
-    };
-    setState(prev => ({
-      ...prev,
-      athletes: [...(Array.isArray(prev.athletes) ? prev.athletes : []), newAthlete],
-      groupInfo: {
-        ...prev.groupInfo,
-        athleteCount: (prev.groupInfo?.athleteCount || 0) + 1
-      }
-    }));
+    setState(prev => {
+      const targetGroupId = athleteData.groupId || prev.selectedGroupId || prev.groups[0]?.id || 'grp-1';
+      const newAthlete: Athlete = {
+        ...athleteData,
+        groupId: targetGroupId,
+        id: `ath-${Date.now()}`,
+        avatarInitials: initials,
+        isActive: athleteData.isActive ?? true,
+        admissionDecision: athleteData.admissionDecision || {
+          status: 'pending',
+          basis: 'Новый спортсмен, требуется медкомиссия',
+          reviewedAt: new Date().toISOString().slice(0, 10),
+          reviewedBy: 'Тренер'
+        }
+      };
+      const updatedAthletes = [...(Array.isArray(prev.athletes) ? prev.athletes : []), newAthlete];
+      const updatedGroups = (Array.isArray(prev.groups) ? prev.groups : []).map(g => ({
+        ...g,
+        athleteCount: updatedAthletes.filter(a => a && a.groupId === g.id && a.isActive).length
+      }));
+      return {
+        ...prev,
+        athletes: updatedAthletes,
+        groups: updatedGroups,
+        groupInfo: {
+          ...prev.groupInfo,
+          athleteCount: updatedAthletes.filter(a => a && a.groupId === prev.groupInfo?.id && a.isActive).length
+        }
+      };
+    });
   };
 
   const updateGroupInfo = (info: Partial<GroupInfo>) => {
@@ -782,6 +926,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 nextGoal
               }
             ]
+          };
+        }
+        return c;
+      })
+    }));
+  };
+
+  const addCompetitionParticipants = (
+    competitionId: string,
+    newParticipants: Array<{ athleteId: string; category: string; nextGoal?: string }>
+  ) => {
+    if (!competitionId || !Array.isArray(newParticipants) || newParticipants.length === 0) return;
+    setState(prev => ({
+      ...prev,
+      competitions: (Array.isArray(prev.competitions) ? prev.competitions : []).map(c => {
+        if (c && c.id === competitionId) {
+          const existing = Array.isArray(c.participants) ? c.participants : [];
+          const seenIds = new Set(existing.map(p => p && p.athleteId));
+          const toAdd: any[] = [];
+          for (const np of newParticipants) {
+            if (np && np.athleteId && !seenIds.has(np.athleteId)) {
+              seenIds.add(np.athleteId);
+              const athlete = (Array.isArray(prev.athletes) ? prev.athletes : []).find(a => a && a.id === np.athleteId);
+              toAdd.push({
+                athleteId: np.athleteId,
+                category: np.category?.trim() || 'Основная категория',
+                admissionDecision: athlete?.admissionDecision?.status || 'pending',
+                nextGoal: np.nextGoal?.trim() || undefined
+              });
+            }
+          }
+          return {
+            ...c,
+            participants: [...existing, ...toAdd]
           };
         }
         return c;
@@ -847,10 +1025,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteClubUser = (userId: string) => {
     if (!userId) return;
-    setState(prev => ({
-      ...prev,
-      clubUsers: (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).filter(u => u && u.id !== userId)
-    }));
+    setState(prev => {
+      const userToDelete = (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).find(u => u && u.id === userId);
+      const updatedClubUsers = (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).filter(u => u && u.id !== userId);
+
+      // If deleted user was a coach, update groups they coached to 'Не назначен'
+      let updatedGroups = Array.isArray(prev.groups) ? prev.groups : [];
+      let updatedGroupInfo = prev.groupInfo;
+      let updatedSlots = Array.isArray(prev.scheduleSlots) ? prev.scheduleSlots : [];
+
+      if (userToDelete && userToDelete.role === 'coach') {
+        updatedGroups = updatedGroups.map(g => {
+          if (isCoachForGroup(userToDelete, g)) {
+            return { ...g, coachName: 'Не назначен' };
+          }
+          return g;
+        });
+
+        if (prev.groupInfo && isCoachForGroup(userToDelete, prev.groupInfo)) {
+          updatedGroupInfo = { ...prev.groupInfo, coachName: 'Не назначен' };
+        }
+
+        const coachShort = getCoachShortName(userToDelete.fullName);
+        updatedSlots = updatedSlots.map(sl => {
+          if (
+            sl &&
+            (sl.coach === userToDelete.fullName ||
+              sl.coach === coachShort ||
+              sl.coach === userToDelete.id)
+          ) {
+            return { ...sl, coach: 'Не назначен' };
+          }
+          return sl;
+        });
+      }
+
+      // If deleted user was head manager, transfer to remaining admin or first user
+      let finalClubUsers = updatedClubUsers;
+      if (userToDelete?.isHeadManager) {
+        const adminIndex = finalClubUsers.findIndex(u => u.role === 'admin');
+        if (adminIndex !== -1) {
+          finalClubUsers = finalClubUsers.map((u, idx) =>
+            idx === adminIndex ? { ...u, isHeadManager: true } : u
+          );
+        } else if (finalClubUsers.length > 0) {
+          finalClubUsers = [{ ...finalClubUsers[0], isHeadManager: true }, ...finalClubUsers.slice(1)];
+        }
+      }
+
+      // If deleted user was activeCoachId, switch activeCoachId to remaining coach
+      let newActiveCoachId = prev.activeCoachId;
+      let newSelectedGroupId = prev.selectedGroupId;
+      if (prev.activeCoachId === userId) {
+        const remainingCoaches = finalClubUsers.filter(u => u.role === 'coach');
+        newActiveCoachId = remainingCoaches[0]?.id || '';
+        if (remainingCoaches[0]) {
+          const coachFirstGroup = updatedGroups.find(g => isCoachForGroup(remainingCoaches[0], g));
+          if (coachFirstGroup) {
+            newSelectedGroupId = coachFirstGroup.id;
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        clubUsers: finalClubUsers,
+        groups: updatedGroups,
+        groupInfo: updatedGroupInfo,
+        scheduleSlots: updatedSlots,
+        activeCoachId: newActiveCoachId,
+        selectedGroupId: newSelectedGroupId
+      };
+    });
   };
 
   const setHeadManager = (userId: string) => {
@@ -907,10 +1153,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteGroup = (groupId: string) => {
     if (!groupId) return;
-    setState(prev => ({
-      ...prev,
-      groups: (Array.isArray(prev.groups) ? prev.groups : []).filter(g => g && g.id !== groupId)
-    }));
+    setState(prev => {
+      const targetGroup = (Array.isArray(prev.groups) ? prev.groups : []).find(g => g && g.id === groupId);
+      const targetGroupName = targetGroup?.name || '';
+
+      const updatedGroups = (Array.isArray(prev.groups) ? prev.groups : []).filter(g => g && g.id !== groupId);
+      const fallbackGroupId = updatedGroups[0]?.id || '';
+
+      // Reassign athletes of deleted group to fallback group (or empty string if no groups left)
+      const updatedAthletes = (Array.isArray(prev.athletes) ? prev.athletes : []).map(a => {
+        if (a && a.groupId === groupId) {
+          return { ...a, groupId: fallbackGroupId };
+        }
+        return a;
+      });
+
+      // Recalculate athleteCount for all remaining groups
+      const recalculatedGroups = updatedGroups.map(g => ({
+        ...g,
+        athleteCount: updatedAthletes.filter(a => a && a.groupId === g.id && a.isActive).length
+      }));
+
+      // Clean up sessions and scheduleSlots of deleted group
+      const baseGroupName = targetGroupName.split('(')[0]?.trim();
+      const updatedSessions = (Array.isArray(prev.sessions) ? prev.sessions : []).filter(
+        s => s && s.groupId !== groupId
+      );
+      const updatedSlots = (Array.isArray(prev.scheduleSlots) ? prev.scheduleSlots : []).filter(
+        sl => {
+          if (!sl) return false;
+          if (sl.group === targetGroupName || sl.group === groupId) return false;
+          if (baseGroupName && (sl.group === baseGroupName || sl.group.startsWith(baseGroupName + ' '))) return false;
+          return true;
+        }
+      );
+
+      // Reset selectedGroupId if it was deleted
+      const newSelectedGroupId = prev.selectedGroupId === groupId
+        ? fallbackGroupId
+        : (recalculatedGroups.some(g => g.id === prev.selectedGroupId) ? prev.selectedGroupId : fallbackGroupId);
+
+      // Reset selectedSessionId if it belonged to deleted sessions
+      const newSelectedSessionId = updatedSessions.some(s => s.id === prev.selectedSessionId)
+        ? prev.selectedSessionId
+        : (updatedSessions[0]?.id || '');
+
+      const newGroupInfo = (prev.groupInfo && prev.groupInfo.id === groupId)
+        ? (recalculatedGroups[0] || getDefaultState().groupInfo)
+        : prev.groupInfo;
+
+      return {
+        ...prev,
+        groups: recalculatedGroups,
+        athletes: updatedAthletes,
+        sessions: updatedSessions,
+        scheduleSlots: updatedSlots,
+        selectedGroupId: newSelectedGroupId,
+        selectedSessionId: newSelectedSessionId,
+        groupInfo: newGroupInfo
+      };
+    });
   };
 
   const moveAthleteToGroup = (athleteId: string, targetGroupId: string) => {
@@ -1011,7 +1313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const createTrainingSessionFromPlan = (data: {
+  const createTrainingSessionFromPlan = useCallback((data: {
     groupId: string;
     date: string;
     timeRange: string;
@@ -1020,39 +1322,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }) => {
     if (!data || !data.topic) return;
     const newSessionId = `ses-${Date.now()}`;
-    const planItems = data.exercises.map((ex, idx) => ({
+    const planItems = (data.exercises || []).map((ex, idx) => ({
       order: idx + 1,
       title: `${ex.title} (${ex.durationMinutes} мин)`,
       timeRange: `${ex.durationMinutes} мин`
     }));
 
-    const groupAthletes = (Array.isArray(state.athletes) ? state.athletes : []).filter(
-      a => a && a.groupId === data.groupId && a.isActive
-    );
-    const initialAttendance: Record<string, AttendanceStatus> = {};
-    groupAthletes.forEach(a => {
-      initialAttendance[a.id] = 'unmarked';
+    setState(prev => {
+      const groupAthletes = (Array.isArray(prev.athletes) ? prev.athletes : []).filter(
+        a => a && a.groupId === data.groupId && a.isActive
+      );
+      const initialAttendance: Record<string, AttendanceStatus> = {};
+      groupAthletes.forEach(a => {
+        initialAttendance[a.id] = 'unmarked';
+      });
+
+      const newSession: TrainingSession = {
+        id: newSessionId,
+        groupId: data.groupId,
+        date: data.date,
+        timeRange: data.timeRange,
+        topic: data.topic,
+        isCompleted: false,
+        plan: planItems,
+        attendance: initialAttendance,
+        exceptions: {},
+        notes: []
+      };
+
+      return {
+        ...prev,
+        sessions: [newSession, ...(Array.isArray(prev.sessions) ? prev.sessions : [])],
+        selectedSessionId: newSessionId
+      };
     });
-
-    const newSession: TrainingSession = {
-      id: newSessionId,
-      groupId: data.groupId,
-      date: data.date,
-      timeRange: data.timeRange,
-      topic: data.topic,
-      isCompleted: false,
-      plan: planItems,
-      attendance: initialAttendance,
-      exceptions: {},
-      notes: []
-    };
-
-    setState(prev => ({
-      ...prev,
-      sessions: [newSession, ...(Array.isArray(prev.sessions) ? prev.sessions : [])],
-      selectedSessionId: newSessionId
-    }));
-  };
+  }, []);
 
   const resetToDemo = () => {
     safeRemoveItem(STORAGE_KEY);
@@ -1128,6 +1432,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         storageError,
         clearStorageError,
         setRole,
+        setActiveCoachId,
         setActiveNav,
         setSelectedAthleteId,
         setSelectedSessionId,
@@ -1149,6 +1454,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateGroupInfo,
         addCompetition,
         addCompetitionParticipant,
+        addCompetitionParticipants,
         addScheduleSlot,
         updateScheduleSlot,
         deleteScheduleSlot,

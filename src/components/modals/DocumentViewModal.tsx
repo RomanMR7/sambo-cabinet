@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext';
 import { DocumentRecord } from '../../types';
 import { X, FileText, CheckCircle2, AlertTriangle, ShieldCheck, Download, Calendar, User, Lock } from 'lucide-react';
 
+import { isDocumentAccessibleForRole } from '../../utils/rules';
+
 interface Props {
   document: DocumentRecord | null;
   onClose: () => void;
@@ -10,14 +12,30 @@ interface Props {
 }
 
 export const DocumentViewModal: React.FC<Props> = ({ document, onClose, athleteName }) => {
-  const { role } = useApp();
+  const { role, selectedAthleteId } = useApp();
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!document) return null;
 
-  const isRestrictedForAdmin = role === 'admin' && (document.isRestrictedMedical || document.type === 'medical');
+  const currentAthleteId = (role === 'parent' || role === 'athlete') ? 'ath-1' : selectedAthleteId;
+  const isAccessible = isDocumentAccessibleForRole(document, role, currentAthleteId);
 
-  if (isRestrictedForAdmin) {
+  if (!isAccessible) {
+    const isMedicalAdminBlock = role === 'admin';
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+      <div 
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+      >
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-red-200 overflow-hidden flex flex-col p-6 space-y-4">
           <div className="flex items-center gap-3 text-red-600">
             <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
@@ -25,13 +43,23 @@ export const DocumentViewModal: React.FC<Props> = ({ document, onClose, athleteN
             </div>
             <div>
               <h3 className="font-extrabold text-base text-slate-900">Доступ заблокирован (152-ФЗ)</h3>
-              <p className="text-xs text-red-600 font-semibold">Врачебная тайна и защита персональных данных</p>
+              <p className="text-xs text-red-600 font-semibold">
+                {isMedicalAdminBlock ? 'Врачебная тайна и защита персональных данных' : 'Защита персональных данных спортсменов'}
+              </p>
             </div>
           </div>
 
           <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-950 leading-relaxed">
             <span className="font-bold">Системное ограничение матрицы доступа: </span>
-            У роли <span className="font-bold">Администратор</span> отсутствует медицинский допуск. Доступ к копиям и сканам медицинских справок строго запрещен законодательством о защите персональных данных (152-ФЗ).
+            {isMedicalAdminBlock ? (
+              <>
+                У роли <span className="font-bold">Администратор</span> отсутствует медицинский допуск. Доступ к копиям и сканам медицинских справок строго запрещен законодательством о защите персональных данных (152-ФЗ).
+              </>
+            ) : (
+              <>
+                Доступ к персональным документам и медицинским данным других спортсменов строго запрещен законодательством (152-ФЗ). Разрешен просмотр только документов своего спортсмена.
+              </>
+            )}
           </div>
 
           <div className="flex justify-end pt-2">
@@ -51,7 +79,10 @@ export const DocumentViewModal: React.FC<Props> = ({ document, onClose, athleteN
   const hasRemarks = document.verificationStatus === 'has_remarks';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">

@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Trophy, Calendar, MapPin, CheckCircle2, Clock, Users, Plus, X } from 'lucide-react';
 import { AddCompetitionModal } from '../../components/modals/AddCompetitionModal';
 
 export const CompetitionsView: React.FC = () => {
-  const { competitions, athletes, setSelectedAthleteId, setActiveNav, addCompetitionParticipant } = useApp();
+  const { competitions, athletes, setSelectedAthleteId, setActiveNav, addCompetitionParticipants } = useApp();
   const [isAddCompOpen, setIsAddCompOpen] = useState(false);
   const [addParticipantCompId, setAddParticipantCompId] = useState<string | null>(null);
-  const [partAthleteId, setPartAthleteId] = useState<string>('');
+  const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>([]);
   const [partCategory, setPartCategory] = useState<string>('Юноши до 42 кг');
   const [partNextGoal, setPartNextGoal] = useState<string>('');
+  const [isSubmittingPart, setIsSubmittingPart] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && addParticipantCompId) {
+        setAddParticipantCompId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [addParticipantCompId]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -77,22 +88,21 @@ export const CompetitionsView: React.FC = () => {
                   <button
                     onClick={() => {
                       setAddParticipantCompId(comp.id);
-                      // Select first athlete not in this comp
-                      const available = athletes.find(a => !comp.participants.some(p => p.athleteId === a.id));
-                      setPartAthleteId(available?.id || athletes[0]?.id || '');
+                      const available = athletes.filter(a => a.isActive && !comp.participants.some(p => p.athleteId === a.id));
+                      setSelectedAthleteIds(available.length > 0 ? [available[0].id] : []);
                       setPartCategory('Юноши до 42 кг');
                       setPartNextGoal('');
                     }}
                     className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 hover:underline"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ Заявить участника</span>
+                    <span>+ Заявить участников</span>
                   </button>
                 </div>
 
                 {comp.participants.length === 0 ? (
                   <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                    Нет заявленных спортсменов на этот турнир. Нажмите «+ Заявить участника».
+                    Нет заявленных спортсменов на этот турнир. Нажмите «+ Заявить участников».
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -111,7 +121,7 @@ export const CompetitionsView: React.FC = () => {
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-sm text-slate-900">
-                              {athlete?.shortName}
+                              {athlete?.shortName || 'Спортсмен'}
                             </span>
                             {isAdmitted ? (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
@@ -148,106 +158,180 @@ export const CompetitionsView: React.FC = () => {
       )}
 
       {/* Add Participant Modal Dialog */}
-      {addParticipantCompId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden flex flex-col">
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center text-white">
-                  <Users className="w-5 h-5" />
+      {addParticipantCompId && (() => {
+        const targetComp = competitions.find(c => c.id === addParticipantCompId);
+        const availableAthletes = athletes.filter(
+          a => a.isActive && !targetComp?.participants.some(p => p.athleteId === a.id)
+        );
+
+        const handleToggleAthlete = (athId: string) => {
+          setSelectedAthleteIds(prev =>
+            prev.includes(athId) ? prev.filter(id => id !== athId) : [...prev, athId]
+          );
+        };
+
+        const handleSelectAll = () => {
+          if (selectedAthleteIds.length === availableAthletes.length) {
+            setSelectedAthleteIds([]);
+          } else {
+            setSelectedAthleteIds(availableAthletes.map(a => a.id));
+          }
+        };
+
+        const handleSubmitParticipants = (e: React.FormEvent) => {
+          e.preventDefault();
+          if (selectedAthleteIds.length === 0) return;
+          setIsSubmittingPart(true);
+          try {
+            addCompetitionParticipants(
+              addParticipantCompId,
+              selectedAthleteIds.map(id => ({
+                athleteId: id,
+                category: partCategory.trim() || 'Основная категория',
+                nextGoal: partNextGoal.trim() || undefined
+              }))
+            );
+            setAddParticipantCompId(null);
+          } finally {
+            setIsSubmittingPart(false);
+          }
+        };
+
+        return (
+          <div
+            onClick={e => {
+              if (e.target === e.currentTarget) setAddParticipantCompId(null);
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center text-white">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base">Заявить спортсменов на турнир</h3>
+                    <p className="text-xs text-slate-300">
+                      {targetComp?.title}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-base">Заявить спортсмена на турнир</h3>
-                  <p className="text-xs text-slate-300">
-                    {competitions.find(c => c.id === addParticipantCompId)?.title}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setAddParticipantCompId(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                if (!partAthleteId) return;
-                addCompetitionParticipant(addParticipantCompId, partAthleteId, partCategory, partNextGoal.trim() || undefined);
-                setAddParticipantCompId(null);
-              }}
-              className="p-6 space-y-4"
-            >
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Спортсмен группы *
-                </label>
-                <select
-                  value={partAthleteId}
-                  onChange={e => setPartAthleteId(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white"
-                >
-                  {athletes.map(a => {
-                    const comp = competitions.find(c => c.id === addParticipantCompId);
-                    const alreadyIn = comp?.participants.some(p => p.athleteId === a.id);
-                    return (
-                      <option key={a.id} value={a.id} disabled={alreadyIn}>
-                        {a.shortName} ({a.fullName}) {alreadyIn ? '— уже заявлен' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Весовая категория *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={partCategory}
-                  onChange={e => setPartCategory(e.target.value)}
-                  placeholder="Юноши до 42 кг"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Индивидуальная задача на схватки
-                </label>
-                <input
-                  type="text"
-                  value={partNextGoal}
-                  onChange={e => setPartNextGoal(e.target.value)}
-                  placeholder="Отработка плотного захвата, бросок через спину"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
                 <button
-                  type="button"
                   onClick={() => setAddParticipantCompId(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
                 >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md transition"
-                >
-                  Заявить в состав
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSubmitParticipants} className="p-6 space-y-4 overflow-y-auto">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Выберите спортсменов ({selectedAthleteIds.length} из {availableAthletes.length}) *
+                    </label>
+                    {availableAthletes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleSelectAll}
+                        className="text-xs font-semibold text-red-600 hover:text-red-700"
+                      >
+                        {selectedAthleteIds.length === availableAthletes.length
+                          ? 'Снять выбор'
+                          : 'Выбрать всех'}
+                      </button>
+                    )}
+                  </div>
+
+                  {availableAthletes.length === 0 ? (
+                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                      Все активные спортсмены уже заявлены на данный турнир.
+                    </div>
+                  ) : (
+                    <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-48 overflow-y-auto p-1 bg-slate-50/50">
+                      {availableAthletes.map(a => {
+                        const isChecked = selectedAthleteIds.includes(a.id);
+                        return (
+                          <div
+                            key={a.id}
+                            onClick={() => handleToggleAthlete(a.id)}
+                            className="flex items-center gap-3 p-2.5 hover:bg-white rounded-lg cursor-pointer transition select-none"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              readOnly
+                              className="w-4 h-4 rounded text-red-600 focus:ring-red-500 pointer-events-none"
+                            />
+                            <div className="w-7 h-7 rounded-md bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center shrink-0">
+                              {a.avatarInitials}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-bold text-slate-900 truncate">
+                                {a.fullName}
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                {a.shortName} • {a.admissionDecision.status === 'admitted' ? 'Допущен' : 'Ожидает допуска'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Весовая категория (для выбранных) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={partCategory}
+                    onChange={e => setPartCategory(e.target.value)}
+                    placeholder="Юноши до 42 кг"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Индивидуальная задача на схватки
+                  </label>
+                  <input
+                    type="text"
+                    value={partNextGoal}
+                    onChange={e => setPartNextGoal(e.target.value)}
+                    placeholder="Отработка плотного захвата, бросок через спину"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setAddParticipantCompId(null)}
+                    className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPart || selectedAthleteIds.length === 0}
+                    className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold shadow-md transition"
+                  >
+                    {isSubmittingPart
+                      ? 'Заявление...'
+                      : `Заявить в состав (${selectedAthleteIds.length})`}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
