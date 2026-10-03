@@ -10,10 +10,10 @@ import {
   getCompetitionsForDate,
   getCompetitionsForMonth,
   filterSlotsForDay,
-  calculateMonthKPI
+  calculateMonthKPI,
+  getTodayDate
 } from '../calendarEngine';
 import { Competition, ScheduleSlot } from '../../types';
-import { DEMO_TODAY } from '../rules';
 
 describe('calendarEngine', () => {
   const sampleComp: Competition = {
@@ -56,6 +56,16 @@ describe('calendarEngine', () => {
     }
   ];
 
+  it('generates today date dynamically in YYYY-MM-DD format', () => {
+    const today = getTodayDate();
+    expect(today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const now = new Date();
+    const expectedYear = now.getFullYear();
+    const expectedMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const expectedDay = String(now.getDate()).padStart(2, '0');
+    expect(today).toBe(`${expectedYear}-${expectedMonth}-${expectedDay}`);
+  });
+
   it('correctly maps day of week index and name', () => {
     // 2026-10-06 is Tuesday (index 1)
     expect(getDayOfWeekIndex('2026-10-06')).toBe(1);
@@ -91,21 +101,40 @@ describe('calendarEngine', () => {
     const octDays = grid.filter(d => d.isCurrentMonth);
     expect(octDays.length).toBe(31);
 
-    // Oct 6 is DEMO_TODAY
-    const todayCell = grid.find(d => d.date === DEMO_TODAY);
-    expect(todayCell).toBeDefined();
-    expect(todayCell?.isToday).toBe(true);
-    expect(todayCell?.dayNumber).toBe(6);
-    expect(todayCell?.dayName).toBe('Вторник');
+    const oct6Cell = grid.find(d => d.date === '2026-10-06');
+    expect(oct6Cell).toBeDefined();
+    expect(oct6Cell?.dayNumber).toBe(6);
+    expect(oct6Cell?.dayName).toBe('Вторник');
+    expect(oct6Cell?.isToday).toBe(getTodayDate() === '2026-10-06');
   });
 
-  it('generates week days for the week containing DEMO_TODAY', () => {
+  it('dynamically highlights today in month grid for current month', () => {
+    const todayStr = getTodayDate();
+    const [y, m, d] = todayStr.split('-').map(Number);
+    const grid = getMonthGrid(y, m - 1);
+    const todayCell = grid.find(cell => cell.date === todayStr);
+    expect(todayCell).toBeDefined();
+    expect(todayCell?.isToday).toBe(true);
+    expect(todayCell?.dayNumber).toBe(d);
+  });
+
+  it('generates week days for a given date and highlights today dynamically', () => {
+    const todayStr = getTodayDate();
+    const week = getWeekDays(todayStr);
+    expect(week.length).toBe(7);
+    const todayDay = week.find(d => d.date === todayStr);
+    expect(todayDay).toBeDefined();
+    expect(todayDay?.isToday).toBe(true);
+    expect(week[6].isWeekend).toBe(true);
+  });
+
+  it('generates week days for the week containing 2026-10-06', () => {
     const week = getWeekDays('2026-10-06');
     expect(week.length).toBe(7);
     expect(week[0].date).toBe('2026-10-05'); // Monday
     expect(week[0].label).toBe('Пн, 5 окт');
     expect(week[1].date).toBe('2026-10-06'); // Tuesday
-    expect(week[1].isToday).toBe(true);
+    expect(week[1].isToday).toBe(getTodayDate() === '2026-10-06');
     expect(week[6].date).toBe('2026-10-11'); // Sunday
     expect(week[6].isWeekend).toBe(true);
   });
@@ -190,9 +219,10 @@ describe('calendarEngine', () => {
     expect(formatRussianDate(null)).toBe('');
     expect(formatRussianDate('invalid-date')).toBe('invalid-date');
 
-    // getWeekDays with invalid date falls back to DEMO_TODAY
+    // getWeekDays with invalid date falls back to getTodayDate()
     const fallbackWeek = getWeekDays('');
     expect(fallbackWeek.length).toBe(7);
+    expect(fallbackWeek.some(d => d.date === getTodayDate())).toBe(true);
 
     // filterSlotsForDay with empty/null
     expect(filterSlotsForDay('', sampleSlots)).toEqual([]);

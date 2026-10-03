@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { evaluateS3Rule, DEMO_TODAY } from '../../utils/rules';
+import { evaluateS3Rule } from '../../utils/rules';
+import { getTodayDate } from '../../utils/calendarEngine';
 import {
   Award,
   CheckCircle2,
@@ -33,7 +34,7 @@ export const DevelopmentView: React.FC = () => {
 
   // Form states for Weight
   const [weightAthleteId, setWeightAthleteId] = useState('ath-1');
-  const [weightDate, setWeightDate] = useState<string>(DEMO_TODAY);
+  const [weightDate, setWeightDate] = useState<string>(getTodayDate());
   const [weightKg, setWeightKg] = useState('38.5');
   const [weightContext, setWeightContext] = useState('Перед вечерней тренировкой');
 
@@ -63,7 +64,7 @@ export const DevelopmentView: React.FC = () => {
 
     addWeight({
       athleteId: weightAthleteId,
-      date: weightDate || DEMO_TODAY,
+      date: weightDate || getTodayDate(),
       weightKg: Math.round(val * 10) / 10,
       context: weightContext.trim() || 'Взвешивание в зале'
     });

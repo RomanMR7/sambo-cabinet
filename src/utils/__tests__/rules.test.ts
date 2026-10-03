@@ -18,6 +18,8 @@ import {
   DEMO_TODAY,
   getCoachShortName,
   isCoachForGroup,
+  isCoachForSlot,
+  getTodayDate,
   checkScheduleConflict,
   parseTimeInterval,
   canonicalizeDay,
@@ -927,6 +929,85 @@ describe('Контроль конфликтов расписания залов 
     expect(checkScheduleConflict(existingSlots, null as any)).toEqual({ hasConflict: false });
     expect(checkScheduleConflict(existingSlots, { day: '', time: '', hall: '' })).toEqual({ hasConflict: false });
     expect(checkScheduleConflict(existingSlots, { day: 'Пн', time: 'invalid', hall: 'Зал 1' })).toEqual({ hasConflict: false });
+  });
+});
+
+describe('Назначение тренера на слот расписания (isCoachForSlot) и динамическая дата getTodayDate', () => {
+  const coach = { fullName: 'Иванов Алексей Васильевич' };
+
+  it('1. Корректно определяет принадлежность слота тренеру по ФИО, инициалам или фамилии', () => {
+    const slotFull: ScheduleSlot = {
+      id: 's-1',
+      day: 'Понедельник',
+      time: '18:00–19:30',
+      hall: 'Зал 1',
+      sport: 'sambo',
+      coach: 'Иванов Алексей Васильевич',
+      group: 'Группа 1'
+    };
+    expect(isCoachForSlot(coach, slotFull)).toBe(true);
+
+    const slotShort: ScheduleSlot = {
+      ...slotFull,
+      coach: 'Иванов А. В.'
+    };
+    expect(isCoachForSlot(coach, slotShort)).toBe(true);
+
+    const slotNoSpace: ScheduleSlot = {
+      ...slotFull,
+      coach: 'Иванов А.В.'
+    };
+    expect(isCoachForSlot(coach, slotNoSpace)).toBe(true);
+
+    const slotSurnameOnly: ScheduleSlot = {
+      ...slotFull,
+      coach: 'Иванов'
+    };
+    expect(isCoachForSlot(coach, slotSurnameOnly)).toBe(true);
+
+    const slotOther: ScheduleSlot = {
+      ...slotFull,
+      coach: 'Петров С. Н.'
+    };
+    expect(isCoachForSlot(coach, slotOther)).toBe(false);
+  });
+
+  it('2. Безопасен при передаче undefined или null значений в isCoachForSlot', () => {
+    expect(isCoachForSlot(null, null)).toBe(false);
+    expect(isCoachForSlot(coach, null)).toBe(false);
+    expect(isCoachForSlot(null, { id: 's-1', day: 'Пн', time: '10:00', hall: '1', sport: 'sambo', coach: 'Иванов А. В.', group: 'Г1' })).toBe(false);
+    expect(isCoachForSlot({ fullName: '' }, { id: 's-1', day: 'Пн', time: '10:00', hall: '1', sport: 'sambo', coach: 'Иванов А. В.', group: 'Г1' })).toBe(false);
+    expect(isCoachForSlot(coach, { id: 's-1', day: 'Пн', time: '10:00', hall: '1', sport: 'sambo', coach: '', group: 'Г1' })).toBe(false);
+  });
+
+  it('3. Экспортирует getTodayDate и использует динамическую дату как fallback в getDaysUntilExpiry', () => {
+    const today = getTodayDate();
+    expect(today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    // Document expiring far in the future
+    const futureDocDate = '2099-12-31';
+    const daysUntil = getDaysUntilExpiry(futureDocDate);
+    expect(daysUntil).toBeGreaterThan(14);
+    expect(getDocumentStatus(futureDocDate)).toBe('valid');
+    expect(getDocumentExpiryStatus(futureDocDate)).toBe('valid');
+
+    // Document expired long ago
+    const pastDocDate = '2000-01-01';
+    expect(getDaysUntilExpiry(pastDocDate)!).toBeLessThan(0);
+    expect(getDocumentStatus(pastDocDate)).toBe('expired');
+    expect(getDocumentExpiryStatus(pastDocDate)).toBe('expired');
+  });
+
+  it('4. parseTimeInterval парсит различные виды тире одинаково (en-dash, em-dash, hyphen)', () => {
+    const enDash = parseTimeInterval('18:00–19:30');
+    const emDash = parseTimeInterval('18:00—19:30');
+    const hyphen = parseTimeInterval('18:00-19:30');
+    const spaces = parseTimeInterval('18:00 - 19:30');
+
+    expect(enDash).toEqual({ start: 1080, end: 1170 });
+    expect(emDash).toEqual({ start: 1080, end: 1170 });
+    expect(hyphen).toEqual({ start: 1080, end: 1170 });
+    expect(spaces).toEqual({ start: 1080, end: 1170 });
   });
 });
 

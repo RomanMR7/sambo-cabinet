@@ -25,8 +25,7 @@ import {
 import {
   parseTimeInterval,
   canonicalizeHall,
-  getCoachShortName,
-  DEMO_TODAY
+  getCoachShortName
 } from '../../utils/rules';
 import {
   DAYS_OF_WEEK,
@@ -42,7 +41,8 @@ import {
   getWeekDays,
   getCompetitionsForDate,
   filterSlotsForDay,
-  calculateMonthKPI
+  calculateMonthKPI,
+  getTodayDate
 } from '../../utils/calendarEngine';
 import { EditScheduleSlotModal } from '../modals/EditScheduleSlotModal';
 
@@ -75,8 +75,8 @@ export const HallCalendarView: React.FC = () => {
   // View mode: 'month' | 'week' | 'day'
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
 
-  // Time navigation state (default: DEMO_TODAY = '2026-10-06')
-  const [currentDate, setCurrentDate] = useState<string>(DEMO_TODAY);
+  // Time navigation state (default: dynamic getTodayDate())
+  const [currentDate, setCurrentDate] = useState<string>(getTodayDate());
 
   // Filters
   const [selectedHall, setSelectedHall] = useState<string>('all'); // 'all' | 'Зал самбо №1' | 'Зал самбо №2 (ОФП)'
@@ -198,7 +198,7 @@ export const HallCalendarView: React.FC = () => {
   };
 
   const handleJumpToToday = () => {
-    setCurrentDate(DEMO_TODAY);
+    setCurrentDate(getTodayDate());
   };
 
   // Period title for header
@@ -605,11 +605,11 @@ export const HallCalendarView: React.FC = () => {
             <button
               onClick={handleJumpToToday}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                currentDate === DEMO_TODAY
+                currentDate === getTodayDate()
                   ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-white text-slate-800 hover:bg-slate-50'
               }`}
-              title="Перейти к 6 октября 2026"
+              title={`Перейти к Сегодня (${formatRussianDate(getTodayDate(), false)})`}
             >
               Сегодня
             </button>
@@ -858,7 +858,7 @@ export const HallCalendarView: React.FC = () => {
             {monthGrid.map(cell => {
               const dayComps = getCompetitionsForDate(cell.date, competitions || []);
               const daySlots = filterSlotsForDay(cell.dayName, filteredSlots);
-              const isToday = cell.date === DEMO_TODAY;
+              const isToday = cell.date === getTodayDate();
 
               return (
                 <div
@@ -966,7 +966,7 @@ export const HallCalendarView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
           {weekDays.map(wDay => {
             const slots = filterSlotsForDay(wDay.dayName, filteredSlots);
-            const isToday = wDay.date === DEMO_TODAY;
+            const isToday = wDay.date === getTodayDate();
             const dayComps = getCompetitionsForDate(wDay.date, competitions || []);
             const freeWindows = selectedHall !== 'all' ? getFreeWindows(slots, selectedHall) : [];
 
@@ -1008,7 +1008,7 @@ export const HallCalendarView: React.FC = () => {
                       }`}
                     >
                       {isToday
-                        ? 'Сегодня • 6 октября'
+                        ? `Сегодня • ${formatRussianDate(wDay.date, false)}`
                         : slots.length === 0
                         ? 'Нет занятий'
                         : `${slots.length} ${slots.length === 1 ? 'занятие' : slots.length < 5 ? 'занятия' : 'занятий'}`}
@@ -1208,7 +1208,7 @@ export const HallCalendarView: React.FC = () => {
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
                 {formatRussianDate(currentDate, true)}
-                {currentDate === DEMO_TODAY && (
+                {currentDate === getTodayDate() && (
                   <span className="ml-2 px-2 py-0.5 rounded-md bg-red-600 text-white text-xs uppercase font-extrabold">
                     Сегодня
                   </span>
@@ -1336,9 +1336,9 @@ export const HallCalendarView: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">
                   {formatRussianDate(selectedDayDetail.date, true)}
                 </h3>
-                {selectedDayDetail.date === DEMO_TODAY && (
+                {selectedDayDetail.date === getTodayDate() && (
                   <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-red-600 text-white text-[10px] font-black uppercase">
-                    Сегодня ({formatRussianDate(DEMO_TODAY, false)})
+                    Сегодня ({formatRussianDate(getTodayDate(), false)})
                   </span>
                 )}
               </div>

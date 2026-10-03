@@ -10,6 +10,17 @@ import {
   ScheduleSlot
 } from '../types';
 
+/**
+ * Returns current date formatted as YYYY-MM-DD using local system time.
+ */
+export function getTodayDate(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export const DEMO_TODAY = '2026-10-06';
 
 export type DocumentStatusType = 'valid' | 'expiring_soon' | 'expired' | 'perpetual' | 'unknown';
@@ -39,7 +50,7 @@ export function parseDateUtc(dateStr?: string | null): number | null {
  */
 export function getDaysUntilExpiry(
   expiryDate?: string | null,
-  refDateStr: string = DEMO_TODAY
+  refDateStr: string = getTodayDate()
 ): number | null {
   if (!expiryDate || typeof expiryDate !== 'string') return null;
   const expUtc = parseDateUtc(expiryDate);
@@ -49,12 +60,12 @@ export function getDaysUntilExpiry(
 }
 
 /**
- * Calculates document expiry status based on date difference against DEMO_TODAY.
+ * Calculates document expiry status based on date difference against reference date.
  * <= 14 days is expiring_soon.
  */
 export function getDocumentExpiryStatus(
   expiryDate?: string,
-  refDateStr: string = DEMO_TODAY
+  refDateStr: string = getTodayDate()
 ): ExpiryStatus {
   if (!expiryDate) return 'unknown';
 
@@ -74,7 +85,7 @@ export function getDocumentExpiryStatus(
  */
 export function getDocumentStatus(
   docOrExpiry?: string | { expiryDate?: string; type?: DocType; [key: string]: any },
-  refDateStr: string = DEMO_TODAY,
+  refDateStr: string = getTodayDate(),
   docType?: DocType
 ): DocumentStatusType {
   let expiryDate: string | undefined;
@@ -536,6 +547,7 @@ export function isCoachForGroup(
   const parts = coach.fullName.trim().split(/\s+/);
   const surname = parts[0];
   if (surname && target.startsWith(surname)) {
+    if (target === surname) return true;
     // Check initial if available
     const init = parts[1]?.[0];
     if (init) {
@@ -544,6 +556,17 @@ export function isCoachForGroup(
     return true;
   }
   return false;
+}
+
+/**
+ * Checks whether a schedule slot is assigned to a specific coach.
+ */
+export function isCoachForSlot(
+  coach?: { fullName: string } | null,
+  slot?: ScheduleSlot | null
+): boolean {
+  if (!coach || !coach.fullName || !slot || !slot.coach) return false;
+  return isCoachForGroup(coach, { coachName: slot.coach });
 }
 
 // ==========================================

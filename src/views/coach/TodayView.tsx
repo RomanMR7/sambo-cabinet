@@ -13,22 +13,35 @@ import {
   Flame,
   ChevronRight,
   FolderPlus,
-  ChevronLeft
+  ChevronLeft,
+  MapPin,
+  User
 } from 'lucide-react';
 import {
   getDocumentExpiryStatus,
   calculateFourWeekAttendance,
   isCoachForGroup,
+  isCoachForSlot,
   getCoachShortName,
-  DEMO_TODAY
+  parseTimeInterval
 } from '../../utils/rules';
-import { addDays, formatRussianDate } from '../../utils/calendarEngine';
+import {
+  addDays,
+  formatRussianDate,
+  getTodayDate,
+  getDayOfWeekName,
+  filterSlotsForDay
+} from '../../utils/calendarEngine';
+import { ScheduleSlot } from '../../types';
 
 export const TodayView: React.FC = () => {
   const {
     setActiveNav,
     setSelectedAthleteId,
     setSelectedSessionId,
+    setSelectedGroupId,
+    createTrainingSessionFromPlan,
+    scheduleSlots,
     tasks,
     documents,
     athletes,
@@ -68,30 +81,111 @@ export const TodayView: React.FC = () => {
 
   const coachAthleteIds = new Set(coachAthletes.map(a => a.id));
 
-  // Selected date state with interactive switching
-  const [selectedDate, setSelectedDate] = useState<string>(DEMO_TODAY);
-  const isSelectedToday = selectedDate === DEMO_TODAY;
+  // Dynamic today date state
+  const todayDate = getTodayDate();
+  const [selectedDate, setSelectedDate] = useState<string>(todayDate);
+  const isSelectedToday = selectedDate === todayDate;
   const selectedDateFormatted = formatRussianDate(selectedDate, true);
 
   const handlePrevDay = () => setSelectedDate(prev => addDays(prev, -1));
   const handleNextDay = () => setSelectedDate(prev => addDays(prev, 1));
-  const handleToday = () => setSelectedDate(DEMO_TODAY);
+  const handleToday = () => setSelectedDate(todayDate);
 
   // Sessions for coach's groups
   const coachSessions = (Array.isArray(sessions) ? sessions : []).filter(s =>
     s && coachGroupIds.has(s.groupId)
   );
 
-  // Sessions on the selected date
+  // Day of week for selected date
+  const selectedDayName = getDayOfWeekName(selectedDate);
+
+  // Sessions conducted or saved on selected date
   const sessionsOnDate = coachSessions.filter(s => s.date === selectedDate);
   const sessionForSelectedDate = sessionsOnDate.find(s => !s.isCompleted) || sessionsOnDate[0] || null;
 
-  // Next / upcoming session for coach's groups
+  // Planned mat schedule slots for active coach on this day of week
+  const slotsOnDate = filterSlotsForDay(selectedDayName, scheduleSlots || []).filter(slot =>
+    isCoachForSlot(activeCoach, slot)
+  );
+
+  // Pending planned slots that don't already have a session in journal on this date
+  const pendingSlotsOnDate = slotsOnDate.filter(slot => {
+    const slotInterval = parseTimeInterval(slot.time);
+    return !sessionsOnDate.some(s => {
+      if (s.timeRange === slot.time) return true;
+      if (!slotInterval) return false;
+      const sInterval = parseTimeInterval(s.timeRange);
+      return (
+        sInterval !== null &&
+        sInterval.start === slotInterval.start &&
+        sInterval.end === slotInterval.end
+      );
+    });
+  });
+
+  // Handler to start / open session from a planned carpet schedule slot
+  const handleStartSlotSession = (slot: ScheduleSlot) => {
+    if (!slot) return;
+    const slotGroupName = (slot.group || '').toLowerCase();
+    const matchedGroup = coachGroups.find(
+      g =>
+        g &&
+        g.name &&
+        (slotGroupName.includes(g.name.toLowerCase()) ||
+          g.name.toLowerCase().includes(slotGroupName))
+    ) || coachGroups[0];
+
+    const targetGroupId = matchedGroup?.id || 'grp-1';
+    setSelectedGroupId(targetGroupId);
+
+    // If an existing session for this group and time exists on this date, navigate to it
+    const slotInterval = parseTimeInterval(slot.time);
+    const existing = sessionsOnDate.find(s => {
+      if (s.groupId !== targetGroupId) return false;
+      if (s.timeRange === slot.time) return true;
+      const sInterval = parseTimeInterval(s.timeRange);
+      return (
+        slotInterval !== null &&
+        sInterval !== null &&
+        sInterval.start === slotInterval.start &&
+        sInterval.end === slotInterval.end
+      );
+    });
+    if (existing) {
+      setSelectedSessionId(existing.id);
+      setActiveNav('sessions');
+      return;
+    }
+
+    // Otherwise create session from slot plan and navigate to session journal
+    const sportName =
+      slot.sportLabel ||
+      (slot.sport === 'karate'
+        ? 'Карате Кёкусинкай'
+        : slot.sport === 'fitness'
+        ? 'ОФП и акробатика'
+        : 'Самбо');
+
+    createTrainingSessionFromPlan({
+      groupId: targetGroupId,
+      date: selectedDate,
+      timeRange: slot.time,
+      topic: `${sportName}: ${slot.group}`,
+      exercises: [
+        { title: 'Разминка и специальная подготовка на татами', durationMinutes: 20 },
+        { title: 'Отработка техники и приёмов на ковре', durationMinutes: 50 },
+        { title: 'ОФП, растяжка и подведение итогов', durationMinutes: 20 }
+      ]
+    });
+    setActiveNav('sessions');
+  };
+
+  // Next / upcoming session for coach's groups (compares >= todayDate)
   const sortedSessions = [...coachSessions].sort(
     (a, b) => a.date.localeCompare(b.date) || a.timeRange.localeCompare(b.timeRange)
   );
   const upcomingSession =
-    sortedSessions.find(s => !s.isCompleted && s.date >= DEMO_TODAY) ||
+    sortedSessions.find(s => !s.isCompleted && s.date >= todayDate) ||
     sortedSessions.find(s => !s.isCompleted) ||
     (sortedSessions.length > 0 ? sortedSessions[sortedSessions.length - 1] : null);
 
@@ -127,7 +221,7 @@ export const TodayView: React.FC = () => {
 
   // Recent absences in the last week / recent completed sessions
   const recentSessions = [...coachSessions]
-    .filter(s => s.isCompleted || s.date <= DEMO_TODAY)
+    .filter(s => s.isCompleted || s.date <= todayDate)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 3);
 
@@ -212,7 +306,7 @@ export const TodayView: React.FC = () => {
                   ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
               }`}
-              title={`Перейти к Сегодня (${formatRussianDate(DEMO_TODAY, false)})`}
+              title={`Перейти к Сегодня (${formatRussianDate(todayDate, false)})`}
             >
               <Calendar className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">{selectedDateFormatted}</span>
@@ -234,16 +328,26 @@ export const TodayView: React.FC = () => {
             </button>
           </div>
 
-          {(sessionForSelectedDate || upcomingSession) && (
+          {(sessionForSelectedDate || pendingSlotsOnDate[0] || upcomingSession) && (
             <button
-              onClick={() => handleOpenSession((sessionForSelectedDate || upcomingSession)!.id)}
+              onClick={() => {
+                if (sessionForSelectedDate) {
+                  handleOpenSession(sessionForSelectedDate.id);
+                } else if (pendingSlotsOnDate[0]) {
+                  handleStartSlotSession(pendingSlotsOnDate[0]);
+                } else if (upcomingSession) {
+                  handleOpenSession(upcomingSession.id);
+                }
+              }}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition shrink-0"
             >
               <Dumbbell className="w-4 h-4" />
               <span>
                 {sessionForSelectedDate
-                  ? `Начать тренировку (${sessionForSelectedDate.timeRange.split('–')[0] || '18:00'})`
-                  : `Ближайшая: ${upcomingSession?.date}`}
+                  ? `Начать тренировку (${sessionForSelectedDate.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'})`
+                  : pendingSlotsOnDate[0]
+                  ? `Начать тренировку (${pendingSlotsOnDate[0].time.split(/[\–\-—]/)[0]?.trim() || '18:00'})`
+                  : `Ближайшая: ${upcomingSession ? formatRussianDate(upcomingSession.date, false) : ''}`}
               </span>
             </button>
           )}
@@ -302,25 +406,44 @@ export const TodayView: React.FC = () => {
             {/* Card 2 */}
             <div
               onClick={() => {
-                if (upcomingSession) handleOpenSession(upcomingSession.id);
-                else setActiveNav('sessions');
+                if (sessionForSelectedDate) {
+                  handleOpenSession(sessionForSelectedDate.id);
+                } else if (pendingSlotsOnDate[0]) {
+                  handleStartSlotSession(pendingSlotsOnDate[0]);
+                } else if (upcomingSession) {
+                  handleOpenSession(upcomingSession.id);
+                } else {
+                  setActiveNav('sessions');
+                }
               }}
               className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition cursor-pointer group"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ближайшее</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  {sessionForSelectedDate || pendingSlotsOnDate[0] ? 'Текущее' : 'Ближайшее'}
+                </span>
                 <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
                   <Clock className="w-5 h-5" />
                 </div>
               </div>
               <div className="mt-3">
                 <div className="text-2xl font-extrabold text-slate-900">
-                  {upcomingSession ? `Занятие ${upcomingSession.timeRange.split('–')[0]}` : 'Нет занятий'}
+                  {sessionForSelectedDate
+                    ? `Занятие ${sessionForSelectedDate.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'}`
+                    : pendingSlotsOnDate[0]
+                    ? `Занятие ${pendingSlotsOnDate[0].time.split(/[\–\-—]/)[0]?.trim() || '18:00'}`
+                    : upcomingSession
+                    ? `Занятие ${upcomingSession.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'}`
+                    : 'Нет занятий'}
                 </div>
                 <div className="text-xs text-slate-500 mt-1 flex items-center gap-1 group-hover:text-red-600">
                   <span className="truncate">
-                    {upcomingSession
-                      ? `${upcomingGroup?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${upcomingSession.date}`
+                    {sessionForSelectedDate
+                      ? `${coachGroups.find(g => g.id === sessionForSelectedDate.groupId)?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${isSelectedToday ? 'Сегодня' : selectedDateFormatted}`
+                      : pendingSlotsOnDate[0]
+                      ? `${pendingSlotsOnDate[0].group} • ${isSelectedToday ? 'Сегодня (Ковёр)' : selectedDateFormatted}`
+                      : upcomingSession
+                      ? `${upcomingGroup?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${formatRussianDate(upcomingSession.date, false)}`
                       : 'Расписание свободно'}
                   </span>
                   <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1 shrink-0" />
@@ -370,8 +493,9 @@ export const TodayView: React.FC = () => {
           </div>
 
           {/* Widget «Тренировки дня / Ближайшее занятие» */}
-          {sessionsOnDate.length > 0 ? (
+          {sessionsOnDate.length > 0 || pendingSlotsOnDate.length > 0 ? (
             <div className="space-y-4">
+              {/* Conducted or Saved Sessions */}
               {sessionsOnDate.map(session => {
                 const groupForSession = coachGroups.find(g => g.id === session.groupId);
                 return (
@@ -418,6 +542,88 @@ export const TodayView: React.FC = () => {
                   </div>
                 );
               })}
+
+              {/* Planned Schedule Slots without recorded session yet */}
+              {pendingSlotsOnDate.map(slot => {
+                const isKarate = slot.sport === 'karate';
+                const isFitness = slot.sport === 'fitness';
+                const sportName =
+                  slot.sportLabel ||
+                  (isKarate ? 'Карате Кёкусинкай' : isFitness ? 'ОФП и акробатика' : 'Самбо');
+
+                return (
+                  <div
+                    key={slot.id}
+                    className="bg-white rounded-2xl p-6 text-slate-900 shadow-sm border border-slate-200 hover:border-red-300 flex flex-col md:flex-row md:items-center justify-between gap-6 transition"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0 ${
+                          isKarate
+                            ? 'bg-emerald-600 shadow-emerald-900/20'
+                            : isFitness
+                            ? 'bg-amber-500 shadow-amber-900/20'
+                            : 'bg-red-600 shadow-red-900/20'
+                        }`}
+                      >
+                        <Dumbbell className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                              isKarate
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : isFitness
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-red-50 text-red-700 border border-red-200'
+                            }`}
+                          >
+                            {slot.group}
+                          </span>
+                          <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            {slot.time} • {isSelectedToday ? `Сегодня (${formatRussianDate(selectedDate, false)})` : selectedDateFormatted}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            Плановый слот ковра
+                          </span>
+                        </div>
+
+                        <h2 className="text-xl font-bold mt-1.5 text-slate-900">{sportName}</h2>
+
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 mt-1.5">
+                          <span className="flex items-center gap-1 font-medium">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                            {slot.hall}
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="flex items-center gap-1 font-medium">
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            {slot.coach}
+                          </span>
+                          {slot.notes && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="italic text-slate-500">{slot.notes}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        onClick={() => handleStartSlotSession(slot)}
+                        className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md shadow-red-900/30 transition flex items-center gap-2"
+                      >
+                        <span>Начать занятие / Открыть журнал</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -427,11 +633,13 @@ export const TodayView: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">
-                    Нет тренировок на {selectedDateFormatted}
+                    Выходной день • Нет тренировок на этот день
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {upcomingSession
-                      ? `Ближайшая тренировка запланирована на ${upcomingSession.date} (${upcomingSession.timeRange}, ${upcomingGroup?.name || 'Группа'}).`
+                    {upcomingSession && upcomingSession.date >= todayDate
+                      ? `Ближайшая тренировка запланирована на ${formatRussianDate(upcomingSession.date, true)} (${upcomingSession.timeRange}, ${upcomingGroup?.name || 'Группа'}).`
+                      : upcomingSession
+                      ? `Последняя тренировка прошла ${formatRussianDate(upcomingSession.date, true)} (${upcomingSession.timeRange}, ${upcomingGroup?.name || 'Группа'}).`
                       : `Для групп тренера ${coachShort} в расписании нет предстоящих занятий.`}
                   </p>
                 </div>
@@ -453,7 +661,7 @@ export const TodayView: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
                   >
-                    Ближайшее ({upcomingSession.date})
+                    {upcomingSession.date >= todayDate ? 'Ближайшее' : 'Журнал'} ({formatRussianDate(upcomingSession.date, false)})
                   </button>
                 )}
               </div>
@@ -543,7 +751,7 @@ export const TodayView: React.FC = () => {
                                     : 'bg-amber-200 text-amber-800'
                                 }`}
                               >
-                                {abs.sessionDate}
+                                {formatRussianDate(abs.sessionDate, false)}
                               </span>
                             </div>
                             <div className="text-xs text-slate-500">

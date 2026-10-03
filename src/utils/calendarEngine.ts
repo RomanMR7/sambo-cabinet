@@ -1,5 +1,7 @@
 import { Competition, ScheduleSlot } from '../types';
-import { DEMO_TODAY, canonicalizeDay, parseTimeInterval } from './rules';
+import { canonicalizeDay, parseTimeInterval, getTodayDate } from './rules';
+
+export { getTodayDate };
 
 export const DAYS_OF_WEEK = [
   'Понедельник',
@@ -192,7 +194,7 @@ export function getMonthGrid(year: number, monthIndex: number): CalendarMonthDay
       dayName: DAYS_OF_WEEK[dayOfWeekIdx],
       dayShort: SHORT_DAYS[dayOfWeekIdx],
       isCurrentMonth,
-      isToday: curDateStr === DEMO_TODAY,
+      isToday: curDateStr === getTodayDate(),
       isWeekend
     });
   }
@@ -204,7 +206,7 @@ export function getMonthGrid(year: number, monthIndex: number): CalendarMonthDay
  * Generates the 7 days of the week containing dateStr (Monday to Sunday).
  */
 export function getWeekDays(dateStr: string): CalendarWeekDay[] {
-  const safeDateStr = (!dateStr || typeof dateStr !== 'string') ? DEMO_TODAY : dateStr;
+  const safeDateStr = (!dateStr || typeof dateStr !== 'string') ? getTodayDate() : dateStr;
   const dayIdx = getDayOfWeekIndex(safeDateStr);
   const mondayStr = addDays(safeDateStr, -dayIdx);
 
@@ -221,7 +223,7 @@ export function getWeekDays(dateStr: string): CalendarWeekDay[] {
       dayName: DAYS_OF_WEEK[dayOfWeekIdx],
       dayShort: SHORT_DAYS[dayOfWeekIdx],
       label: `${SHORT_DAYS[dayOfWeekIdx]}, ${d} ${monthShort}`,
-      isToday: curDate === DEMO_TODAY,
+      isToday: curDate === getTodayDate(),
       isWeekend: dayOfWeekIdx === 5 || dayOfWeekIdx === 6
     });
   }
