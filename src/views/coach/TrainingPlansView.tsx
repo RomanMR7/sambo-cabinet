@@ -15,6 +15,7 @@ import {
   Flame,
   X
 } from 'lucide-react';
+import { getTodayDate } from '../../utils/calendarEngine';
 
 export const PRESET_TRAINING_TIMES = [
   '17:00–18:30',
@@ -46,7 +47,7 @@ export const TrainingPlansView: React.FC = () => {
 
   // Builder state
   const [builderGroupId, setBuilderGroupId] = useState(selectedGroupId || groups[0]?.id || 'grp-1');
-  const [builderDate, setBuilderDate] = useState('2026-10-07');
+  const [builderDate, setBuilderDate] = useState<string>(getTodayDate());
   const [builderTime, setBuilderTime] = useState('18:00–19:30');
   const [builderTopic, setBuilderTopic] = useState('Отработка бросков и тактика борьбы в партере');
   const [planExercises, setPlanExercises] = useState<Array<{ id: string; title: string; durationMinutes: number }>>([

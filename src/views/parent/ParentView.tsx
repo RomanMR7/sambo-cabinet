@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getDocumentExpiryStatus, calculateFourWeekAttendance } from '../../utils/rules';
+import { formatRussianDate } from '../../utils/calendarEngine';
 import { DocumentRecord } from '../../types';
 import {
   Clock,
@@ -189,7 +190,7 @@ export const ParentView: React.FC = () => {
                 <h2 className="font-extrabold text-slate-900 text-base">Ближайшее занятие</h2>
               </div>
               <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
-                {nextSession.date}
+                {formatRussianDate(nextSession.date, false)}
               </span>
             </div>
 
@@ -411,7 +412,7 @@ export const ParentView: React.FC = () => {
                   <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 transition">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-sm">{s.date}</span>
+                        <span className="font-bold text-slate-900 text-sm">{formatRussianDate(s.date, false)}</span>
                         <span className="text-xs font-mono text-slate-500 font-semibold">{s.timeRange}</span>
                       </div>
                       <div className="text-xs text-slate-600 mt-0.5">{s.topic}</div>

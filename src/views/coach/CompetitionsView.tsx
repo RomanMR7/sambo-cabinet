@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Trophy, Calendar, MapPin, CheckCircle2, Clock, Users, Plus, X } from 'lucide-react';
 import { AddCompetitionModal } from '../../components/modals/AddCompetitionModal';
+import { formatRussianDate } from '../../utils/calendarEngine';
 
 export const CompetitionsView: React.FC = () => {
   const { competitions, athletes, setSelectedAthleteId, setActiveNav, addCompetitionParticipants } = useApp();
@@ -64,7 +65,7 @@ export const CompetitionsView: React.FC = () => {
                   <h2 className="text-xl font-black text-slate-900 mt-1">{comp.title}</h2>
                   <div className="flex items-center gap-4 text-xs text-slate-500 mt-1 flex-wrap">
                     <span className="flex items-center gap-1 font-medium">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" /> {comp.date}{comp.endDate && comp.endDate !== comp.date ? ` — ${comp.endDate}` : ''}
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" /> {formatRussianDate(comp.date, false)}{comp.endDate && comp.endDate !== comp.date ? ` — ${formatRussianDate(comp.endDate, false)}` : ''}
                     </span>
                     <span className="flex items-center gap-1 font-medium">
                       <MapPin className="w-3.5 h-3.5 text-slate-400" /> {comp.location}

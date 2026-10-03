@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { X, CalendarX, AlertCircle } from 'lucide-react';
+import { formatRussianDate } from '../../utils/calendarEngine';
 
 interface Props {
   athleteId: string;
@@ -86,7 +87,7 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
             <div>
               <h3 className="font-bold text-base">Сообщить о пропуске</h3>
               <p className="text-xs text-slate-300">
-                {session ? `${session.date} (${session.timeRange})` : 'Ближайшее занятие'}
+                {session ? `${formatRussianDate(session.date, false)} (${session.timeRange})` : 'Ближайшее занятие'}
               </p>
             </div>
           </div>
@@ -130,7 +131,7 @@ export const ReportAbsenceModal: React.FC<Props> = ({ athleteId, sessionId, onCl
             >
               {sessions.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.date} ({s.timeRange}) — {s.topic}
+                  {formatRussianDate(s.date, false)} (${s.timeRange}) — {s.topic}
                 </option>
               ))}
             </select>

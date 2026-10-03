@@ -351,7 +351,7 @@ export const TodayView: React.FC = () => {
                   ? `Начать тренировку (${sessionForSelectedDate.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'})`
                   : pendingSlotsOnDate[0]
                   ? `Начать тренировку (${pendingSlotsOnDate[0].time.split(/[\–\-—]/)[0]?.trim() || '18:00'})`
-                  : `Ближайшая: ${upcomingSession ? formatRussianDate(upcomingSession.date, false) : ''}`}
+                  : `Ближайшая: ${upcomingSession ? `${formatRussianDate(upcomingSession.date, false)} (${upcomingSession.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'})` : ''}`}
               </span>
             </button>
           )}
@@ -437,17 +437,17 @@ export const TodayView: React.FC = () => {
                     : pendingSlotsOnDate[0]
                     ? `Занятие ${pendingSlotsOnDate[0].time.split(/[\–\-—]/)[0]?.trim() || '18:00'}`
                     : upcomingSession
-                    ? `Занятие ${upcomingSession.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'}`
+                    ? `${formatRussianDate(upcomingSession.date, false)} • ${upcomingSession.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'}`
                     : 'Нет занятий'}
                 </div>
                 <div className="text-xs text-slate-500 mt-1 flex items-center gap-1 group-hover:text-red-600">
                   <span className="truncate">
                     {sessionForSelectedDate
-                      ? `${coachGroups.find(g => g.id === sessionForSelectedDate.groupId)?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${isSelectedToday ? 'Сегодня' : selectedDateFormatted}`
+                      ? `${coachGroups.find(g => g.id === sessionForSelectedDate.groupId)?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${sessionForSelectedDate.timeRange}`
                       : pendingSlotsOnDate[0]
-                      ? `${pendingSlotsOnDate[0].group} • ${isSelectedToday ? 'Сегодня (Ковёр)' : selectedDateFormatted}`
+                      ? `${pendingSlotsOnDate[0].group} • ${pendingSlotsOnDate[0].time}`
                       : upcomingSession
-                      ? `${upcomingGroup?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${formatRussianDate(upcomingSession.date, false)}`
+                      ? `${upcomingGroup?.name.replace(/ \(.*\)/, '') || 'Группа'} • ${upcomingSession.timeRange}`
                       : 'Расписание свободно'}
                   </span>
                   <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1 shrink-0" />
@@ -537,7 +537,7 @@ export const TodayView: React.FC = () => {
                             {groupForSession?.name || 'Группа'}
                           </span>
                           <span className="text-xs text-slate-300 font-medium">
-                            {session.timeRange} • {isSelectedToday ? `Сегодня (${formatRussianDate(selectedDate, false)})` : selectedDateFormatted}
+                            {isSelectedToday ? `Сегодня, ${formatRussianDate(selectedDate, false)}` : selectedDateFormatted} • {session.timeRange}
                           </span>
                           {session.isCompleted && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -607,7 +607,7 @@ export const TodayView: React.FC = () => {
                           </span>
                           <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            {slot.time} • {isSelectedToday ? `Сегодня (${formatRussianDate(selectedDate, false)})` : selectedDateFormatted}
+                            {isSelectedToday ? `Сегодня, ${formatRussianDate(selectedDate, false)}` : selectedDateFormatted} • {slot.time}
                           </span>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                             Плановый слот ковра
@@ -685,7 +685,7 @@ export const TodayView: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
                   >
-                    {upcomingSession.date >= todayDate ? 'Ближайшее' : 'Журнал'} ({formatRussianDate(upcomingSession.date, false)})
+                    {upcomingSession.date >= todayDate ? 'Ближайшее' : 'Журнал'} ({formatRussianDate(upcomingSession.date, false)}, {upcomingSession.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'})
                   </button>
                 )}
               </div>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ObservationTaskModal } from '../../components/modals/ObservationTaskModal';
 import { isCoachForGroup } from '../../utils/rules';
+import { formatRussianDate } from '../../utils/calendarEngine';
 
 export const SessionView: React.FC = () => {
   const {
@@ -162,7 +163,7 @@ export const SessionView: React.FC = () => {
                   <optgroup label="Занятия моих групп">
                     {mySessions.map(s => (
                       <option key={s.id} value={s.id}>
-                        {s.date} ({s.timeRange}) — {s.topic}
+                        {formatRussianDate(s.date, false)} ({s.timeRange}) — {s.topic}
                       </option>
                     ))}
                   </optgroup>
@@ -171,7 +172,7 @@ export const SessionView: React.FC = () => {
                   <optgroup label="Другие группы клуба">
                     {otherSessions.map(s => (
                       <option key={s.id} value={s.id}>
-                        {s.date} ({s.timeRange}) — {s.topic}
+                        {formatRussianDate(s.date, false)} ({s.timeRange}) — {s.topic}
                       </option>
                     ))}
                   </optgroup>
@@ -179,7 +180,7 @@ export const SessionView: React.FC = () => {
                 {mySessions.length === 0 && otherSessions.length === 0 && (
                   sessions.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.date} ({s.timeRange}) — {s.topic}
+                      {formatRussianDate(s.date, false)} ({s.timeRange}) — {s.topic}
                     </option>
                   ))
                 )}
@@ -187,7 +188,7 @@ export const SessionView: React.FC = () => {
             </div>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Дата: <span className="font-bold text-slate-700">{currentSession.date}</span> • Время: <span className="font-mono text-slate-700">{currentSession.timeRange}</span> • Зал самбо №1
+            Дата: <span className="font-bold text-slate-700">{formatRussianDate(currentSession.date, true)}</span> • Время: <span className="font-mono text-slate-700">{currentSession.timeRange}</span> • Зал самбо №1
           </p>
         </div>
 

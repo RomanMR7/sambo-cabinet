@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getDocumentExpiryStatus, filterDocumentsForRole } from '../../utils/rules';
+import { formatRussianDate } from '../../utils/calendarEngine';
 import { DocumentRecord } from '../../types';
 import {
   FileText,
@@ -652,11 +653,11 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
                 Основание: {athlete.admissionDecision.basis}
               </div>
               <div className="text-[11px] text-slate-400 mt-1">
-                Дата: {athlete.admissionDecision.reviewedAt} • Автор: {athlete.admissionDecision.reviewedBy}
+                Дата: {formatRussianDate(athlete.admissionDecision.reviewedAt, false)} • Автор: {athlete.admissionDecision.reviewedBy}
               </div>
               {athlete.admissionDecision.validUntil && (
                 <div className="text-[11px] text-amber-700 font-semibold mt-1">
-                  Пересмотр: до {athlete.admissionDecision.validUntil}
+                  Пересмотр: до {formatRussianDate(athlete.admissionDecision.validUntil, false)}
                 </div>
               )}
             </div>

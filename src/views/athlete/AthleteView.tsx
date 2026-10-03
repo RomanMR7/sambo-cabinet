@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   CheckSquare
 } from 'lucide-react';
+import { formatRussianDate } from '../../utils/calendarEngine';
 
 export const AthleteView: React.FC = () => {
   const { athletes, sessions, tasks, competitions, activeNav, setActiveNav, toggleTaskStatus, groups } = useApp();
@@ -232,7 +233,7 @@ export const AthleteView: React.FC = () => {
                 if (!nextSession) return;
                 setActiveModalText({
                   title: 'План следующей тренировки',
-                  content: `Дата: ${nextSession.date} (${nextSession.timeRange})\nТема: ${nextSession.topic}\n\n1. Разминка и акробатика на ковре\n2. Отработка захватов и выведения из равновесия\n3. Учебно-тренировочные схватки по заданию тренера\n4. Заминка и растяжка`
+                  content: `Дата: ${formatRussianDate(nextSession.date, true)} (${nextSession.timeRange})\nТема: ${nextSession.topic}\n\n1. Разминка и акробатика на ковре\n2. Отработка захватов и выведения из равновесия\n3. Учебно-тренировочные схватки по заданию тренера\n4. Заминка и растяжка`
                 });
               }}
               className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center justify-center gap-2"
@@ -414,7 +415,7 @@ export const AthleteView: React.FC = () => {
                       <button
                         onClick={() => setActiveModalText({
                           title: `План занятия: ${s.topic}`,
-                          content: `Дата: ${s.date} (${s.timeRange})\n\nЭтапы занятия:\n${s.plan.map(p => `• ${p.timeRange}: ${p.title}`).join('\n')}`
+                          content: `Дата: ${formatRussianDate(s.date, true)} (${s.timeRange})\n\nЭтапы занятия:\n${s.plan.map(p => `• ${p.timeRange}: ${p.title}`).join('\n')}`
                         })}
                         className="px-3.5 py-1.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition"
                       >
