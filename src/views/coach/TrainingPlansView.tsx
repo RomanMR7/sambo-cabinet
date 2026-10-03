@@ -16,6 +16,20 @@ import {
   X
 } from 'lucide-react';
 
+export const PRESET_TRAINING_TIMES = [
+  '17:00–18:30',
+  '18:00–19:00',
+  '19:00–21:00'
+];
+
+export const PRESET_TRAINING_TOPICS = [
+  'Броски через спину и бедро',
+  'Борьба в партере: болевые и удержания',
+  'Подсечки и зацепы',
+  'Учебные схватки в стойке',
+  'Акробатика и самостраховка'
+];
+
 export const TrainingPlansView: React.FC = () => {
   const {
     groups,
@@ -51,6 +65,7 @@ export const TrainingPlansView: React.FC = () => {
   // Add Exercise Modal state
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
   const [isSubmittingExercise, setIsSubmittingExercise] = useState(false);
+  const [isSubmittingSession, setIsSubmittingSession] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState<ExerciseCategory>('throws');
   const [newIntensity, setNewIntensity] = useState<'low' | 'medium' | 'high'>('high');
@@ -120,8 +135,13 @@ export const TrainingPlansView: React.FC = () => {
 
   const handleCreateSession = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingSession) return;
     if (planExercises.length === 0) {
       alert('Добавьте хотя бы одно упражнение в план занятия.');
+      return;
+    }
+    if (!builderTime.trim()) {
+      alert('Укажите время проведения занятия.');
       return;
     }
     if (!builderTopic.trim()) {
@@ -129,18 +149,23 @@ export const TrainingPlansView: React.FC = () => {
       return;
     }
 
-    createTrainingSessionFromPlan({
-      groupId: builderGroupId,
-      date: builderDate,
-      timeRange: builderTime,
-      topic: builderTopic.trim(),
-      exercises: planExercises.map(pe => ({
-        title: pe.title,
-        durationMinutes: pe.durationMinutes
-      }))
-    });
+    setIsSubmittingSession(true);
+    try {
+      createTrainingSessionFromPlan({
+        groupId: builderGroupId,
+        date: builderDate,
+        timeRange: builderTime.trim(),
+        topic: builderTopic.trim(),
+        exercises: planExercises.map(pe => ({
+          title: pe.title,
+          durationMinutes: pe.durationMinutes
+        }))
+      });
 
-    showToast('Тренировочное занятие успешно создано и добавлено в электронный журнал!');
+      showToast('Тренировочное занятие успешно создано и добавлено в электронный журнал!');
+    } finally {
+      setIsSubmittingSession(false);
+    }
   };
 
   const handleSaveNewExercise = (e: React.FormEvent) => {
@@ -311,58 +336,97 @@ export const TrainingPlansView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Группа самбо *
-                </label>
-                <select
-                  value={builderGroupId}
-                  onChange={e => {
-                    setBuilderGroupId(e.target.value);
-                    setSelectedGroupId(e.target.value);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-medium focus:outline-none focus:border-red-500"
-                >
-                  {groups.map(g => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Группа самбо *
+                  </label>
+                  <select
+                    value={builderGroupId}
+                    onChange={e => {
+                      setBuilderGroupId(e.target.value);
+                      setSelectedGroupId(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-medium focus:outline-none focus:border-red-500"
+                  >
+                    {groups.map(g => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Дата занятия *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={builderDate}
-                  onChange={e => setBuilderDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-red-500 font-mono"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Дата занятия *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={builderDate}
+                    onChange={e => setBuilderDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-red-500 font-mono"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Время проведения *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={builderTime}
-                  onChange={e => setBuilderTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-red-500 font-mono"
-                  placeholder="18:00–19:30"
-                />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Время проведения *
+                  </label>
+                  <div className="flex flex-wrap gap-1 mb-1.5">
+                    {PRESET_TRAINING_TIMES.map(t => {
+                      const isSelected =
+                        builderTime === t ||
+                        builderTime.trim().replace(/\s*[\-\u2010-\u2015\u2212\uFE58\uFF0D–—]\s*/, '–') === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setBuilderTime(t)}
+                          className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition border font-mono ${
+                            isSelected
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={builderTime}
+                    onChange={e => setBuilderTime(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-red-500 font-mono"
+                    placeholder="18:00–19:30"
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Тема занятия *
                 </label>
+                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                  {PRESET_TRAINING_TOPICS.map(top => (
+                    <button
+                      key={top}
+                      type="button"
+                      onClick={() => setBuilderTopic(top)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border ${
+                        builderTopic.trim() === top
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                      }`}
+                    >
+                      {top}
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="text"
                   required
@@ -377,10 +441,11 @@ export const TrainingPlansView: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center gap-2"
+                disabled={isSubmittingSession}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-red-900/20 transition flex items-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Создать занятие в электронном журнале</span>
+                <span>{isSubmittingSession ? 'Создание...' : 'Создать занятие в электронном журнале'}</span>
               </button>
             </div>
           </form>

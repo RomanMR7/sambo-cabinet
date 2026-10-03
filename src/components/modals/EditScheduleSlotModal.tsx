@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ScheduleSlot, SportDiscipline } from '../../types';
 import { X, Calendar, Save, Trash2, AlertTriangle, AlertCircle } from 'lucide-react';
-import { checkScheduleConflict, getCoachShortName, parseTimeInterval, canonicalizeDay } from '../../utils/rules';
+import { checkScheduleConflict, getCoachShortName, parseTimeInterval, canonicalizeDay, canonicalizeHall } from '../../utils/rules';
 
 interface Props {
   slot?: ScheduleSlot | null; // null = adding new slot
@@ -45,6 +45,124 @@ const SPORT_OPTIONS: Array<{
 
 const PRESET_HALLS = ['Зал самбо №1', 'Зал самбо №2 (ОФП)'];
 
+export const PRESET_SCHEDULE_TIMES = [
+  '17:00–18:30',
+  '17:30–19:00',
+  '18:00–19:00',
+  '18:45–20:30',
+  '19:15–20:45',
+  '10:00–11:30',
+  '12:00–14:00'
+];
+
+export const PRESET_SCHEDULE_NOTES = [
+  'Техника в стойке и броски',
+  'Борьба в партере и болевые',
+  'Спарринги и схватки',
+  'Ката и кихон',
+  'Круговая ОФП',
+  'День борьбы'
+];
+
+export interface AutoLinkScheduleResult {
+  group: string;
+  coach?: string;
+  sport?: SportDiscipline;
+  sportLabel?: string;
+  hall?: string;
+}
+
+export function autoLinkScheduleByGroup(
+  selectedGroup?: string | null,
+  defaultCoachName: string = 'Иванов А. В.',
+  groups: Array<{ name: string; coachName?: string }> = []
+): AutoLinkScheduleResult {
+  if (!selectedGroup || typeof selectedGroup !== 'string') {
+    return { group: '' };
+  }
+  const cleanGroup = selectedGroup.trim();
+  if (!cleanGroup) {
+    return { group: '' };
+  }
+  const lower = cleanGroup.toLowerCase();
+
+  // 1. OFP / Fitness preset (must be checked before generic "Группа 1" to avoid greedy match on "Группа 1 (ОФП)")
+  if (lower.includes('офп')) {
+    return {
+      group: cleanGroup,
+      sport: 'fitness',
+      sportLabel: 'ОФП и акробатика',
+      hall: 'Зал самбо №2 (ОФП)'
+    };
+  }
+
+  // 2. Karate presets
+  if (lower.includes('карат')) {
+    return {
+      group: cleanGroup,
+      coach: 'Васильев К. М.',
+      sport: 'karate',
+      sportLabel: 'Карате Кёкусинкай'
+    };
+  }
+
+  // 3. Open mat / Day of wrestling
+  if (lower.includes('день борьбы') || lower.includes('открытый ковёр') || lower.includes('открытый ковер')) {
+    return {
+      group: cleanGroup,
+      sport: 'sambo',
+      sportLabel: 'Самбо',
+      hall: 'Зал самбо №1',
+      coach: defaultCoachName
+    };
+  }
+
+  // 4. Registered club groups from context (exact match)
+  const safeGroups = Array.isArray(groups)
+    ? groups.filter((g): g is { name: string; coachName?: string } => !!(g && typeof g.name === 'string'))
+    : [];
+  const found = safeGroups.find(
+    g => g.name.toLowerCase().trim() === lower
+  );
+  if (found) {
+    return {
+      group: cleanGroup,
+      coach: found.coachName ? getCoachShortName(found.coachName) : defaultCoachName,
+      sport: 'sambo',
+      sportLabel: 'Самбо',
+      hall: 'Зал самбо №1'
+    };
+  }
+
+  // 5. Group 2 (Sambo - Petrov, Hall 1)
+  if (cleanGroup === 'Группа 2' || /^группа\s*2\b/i.test(cleanGroup)) {
+    return {
+      group: cleanGroup,
+      coach: 'Петров С. Н.',
+      sport: 'sambo',
+      sportLabel: 'Самбо',
+      hall: 'Зал самбо №1'
+    };
+  }
+
+  // 6. Group 1 or Group 3 (Sambo - Ivanov, Hall 1)
+  if (
+    cleanGroup === 'Группа 1' ||
+    cleanGroup === 'Группа 3' ||
+    /^группа\s*[13]\b/i.test(cleanGroup)
+  ) {
+    return {
+      group: cleanGroup,
+      coach: 'Иванов А. В.',
+      sport: 'sambo',
+      sportLabel: 'Самбо',
+      hall: 'Зал самбо №1'
+    };
+  }
+
+  return { group: cleanGroup };
+}
+
 export const EditScheduleSlotModal: React.FC<Props> = ({
   slot,
   initialDay,
@@ -53,8 +171,15 @@ export const EditScheduleSlotModal: React.FC<Props> = ({
   onClose,
   onSaved
 }) => {
-  const { scheduleSlots, addScheduleSlot, updateScheduleSlot, deleteScheduleSlot, clubUsers, activeCoachId } =
-    useApp();
+  const {
+    scheduleSlots,
+    addScheduleSlot,
+    updateScheduleSlot,
+    deleteScheduleSlot,
+    clubUsers,
+    activeCoachId,
+    groups
+  } = useApp();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [day, setDay] = useState(slot?.day || initialDay || 'Понедельник');
@@ -97,21 +222,90 @@ export const EditScheduleSlotModal: React.FC<Props> = ({
 
   const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
+  const groupPresets = useMemo(() => {
+    const samboGroupNames = (groups || [])
+      .filter(g => g && typeof g.name === 'string')
+      .map(g => g.name);
+    const extraPresets = [
+      'Карате (Юноши, Кёкусинкай)',
+      'Карате (Взрослые, ката и кумитэ)',
+      'Группа 1 (ОФП)',
+      'Открытый ковёр / День борьбы'
+    ];
+    return Array.from(new Set([...samboGroupNames, ...extraPresets]));
+  }, [groups]);
+
+  const coachPresets = useMemo(() => {
+    const clubCoaches = (clubUsers || [])
+      .filter(u => u && u.role === 'coach' && u.fullName)
+      .map(u => getCoachShortName(u.fullName))
+      .filter(Boolean);
+    const list = clubCoaches.length > 0
+      ? [...clubCoaches, 'Васильев К. М.']
+      : ['Иванов А. В.', 'Петров С. Н.', 'Васильев К. М.'];
+    return Array.from(new Set(list));
+  }, [clubUsers]);
+
+  const handleGroupSelect = (selectedGroup: string) => {
+    const linked = autoLinkScheduleByGroup(selectedGroup, defaultCoachName, groups);
+    setGroup(linked.group);
+    if (linked.coach) setCoach(linked.coach);
+    if (linked.sport) setSport(linked.sport);
+    if (linked.sportLabel) setSportLabel(linked.sportLabel);
+    if (linked.hall) setHall(linked.hall);
+    setErrorMsg(null);
+  };
+
   const handleSportSelect = (selectedSport: SportDiscipline) => {
     setSport(selectedSport);
+    const isKnownKaratePreset =
+      group === 'Карате (Юноши, Кёкусинкай)' ||
+      group === 'Карате (Взрослые, ката и кумитэ)';
+    const isKnownOfpPreset = group === 'Группа 1 (ОФП)';
+    const isStandardSamboPreset =
+      group === 'Группа 1' ||
+      group === 'Группа 2' ||
+      group === 'Группа 3' ||
+      group === 'Группа 1 (Начальная подготовка)' ||
+      group === 'Группа 2 (Учебно-тренировочная)' ||
+      group === 'Группа 3 (Спортивное совершенствование)' ||
+      group === 'Открытый ковёр / День борьбы';
+
     if (selectedSport === 'karate') {
       setSportLabel('Карате Кёкусинкай');
-      if (group === 'Группа 1' || !group) setGroup('Карате (Юноши, Кёкусинкай)');
-      if (coach === 'Иванов А. В.') setCoach('Васильев К. М.');
+      if (isStandardSamboPreset || isKnownOfpPreset || !group) {
+        setGroup('Карате (Юноши, Кёкусинкай)');
+      }
+      if (
+        coach === defaultCoachName ||
+        coach === 'Иванов А. В.' ||
+        coach === 'Иванов А.В.' ||
+        coach === 'Петров С. Н.' ||
+        coach === 'Петров С.Н.'
+      ) {
+        setCoach('Васильев К. М.');
+      }
     } else if (selectedSport === 'fitness') {
       setSportLabel('ОФП и акробатика');
-      if (group === 'Группа 1' || !group) setGroup('Группа 1 (ОФП)');
-      setHall('Зал самбо №2 (ОФП)');
+      if (isStandardSamboPreset || isKnownKaratePreset || !group) {
+        setGroup('Группа 1 (ОФП)');
+      }
+      if (canonicalizeHall(hall) === 'зал 1' || hall === 'Зал самбо №1') {
+        setHall('Зал самбо №2 (ОФП)');
+      }
     } else {
       setSportLabel('Самбо');
-      if (group.includes('Карате') || !group) setGroup('Группа 1');
-      if (coach === 'Васильев К. М.') setCoach(defaultCoachName);
+      if (isKnownKaratePreset || isKnownOfpPreset || !group) {
+        setGroup('Группа 1');
+      }
+      if (coach === 'Васильев К. М.' || coach === 'Васильев К.М.') {
+        setCoach(defaultCoachName);
+      }
+      if (canonicalizeHall(hall) === 'зал 2' || hall === 'Зал самбо №2 (ОФП)') {
+        setHall('Зал самбо №1');
+      }
     }
+    setErrorMsg(null);
   };
 
   const validate = (): string | null => {
@@ -298,7 +492,96 @@ export const EditScheduleSlotModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Day & Time Row */}
+          {/* Group / Section */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Группа / Секция *
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {groupPresets.map(grp => {
+                const isMatchGroup1 = (s: string) => /^группа\s*1\b/i.test(s.trim());
+                const isMatchGroup2 = (s: string) => /^группа\s*2\b/i.test(s.trim());
+                const isMatchGroup3 = (s: string) => /^группа\s*3\b/i.test(s.trim());
+
+                const isActive =
+                  group.trim().toLowerCase() === grp.trim().toLowerCase() ||
+                  (!group.includes('ОФП') &&
+                    !grp.includes('ОФП') &&
+                    ((isMatchGroup1(group) && isMatchGroup1(grp)) ||
+                      (isMatchGroup2(group) && isMatchGroup2(grp)) ||
+                      (isMatchGroup3(group) && isMatchGroup3(grp))));
+                return (
+                  <button
+                    key={grp}
+                    type="button"
+                    onClick={() => handleGroupSelect(grp)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border ${
+                      isActive
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                    }`}
+                  >
+                    {grp}
+                  </button>
+                );
+              })}
+            </div>
+            <input
+              type="text"
+              required
+              value={group}
+              onChange={e => {
+                setGroup(e.target.value);
+                setErrorMsg(null);
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="Группа 1"
+            />
+          </div>
+
+          {/* Coach */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Тренер *
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {coachPresets.map(c => {
+                const isSelected =
+                  coach.trim().toLowerCase() === c.toLowerCase() ||
+                  coach.trim().replace(/\.\s*/g, '.') === c.replace(/\.\s*/g, '.');
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setCoach(c);
+                      setErrorMsg(null);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+            <input
+              type="text"
+              required
+              value={coach}
+              onChange={e => {
+                setCoach(e.target.value);
+                setErrorMsg(null);
+              }}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              placeholder="Иванов А. В."
+            />
+          </div>
+
+          {/* Day & Hall Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -322,99 +605,91 @@ export const EditScheduleSlotModal: React.FC<Props> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Время проведения *
+                Спортивный зал *
               </label>
+              <div className="flex flex-wrap gap-1.5 mb-1.5">
+                {PRESET_HALLS.map(h => {
+                  const isSelected =
+                    canonicalizeHall(hall) === canonicalizeHall(h) ||
+                    hall.trim().toLowerCase() === h.toLowerCase();
+                  return (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => {
+                        setHall(h);
+                        setErrorMsg(null);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border ${
+                        isSelected
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                      }`}
+                    >
+                      {h}
+                    </button>
+                  );
+                })}
+              </div>
               <input
                 type="text"
                 required
-                value={time}
+                value={hall}
                 onChange={e => {
-                  setTime(e.target.value);
+                  setHall(e.target.value);
                   setErrorMsg(null);
                 }}
-                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 ${
-                  conflict.hasConflict
-                    ? 'border-amber-400 bg-amber-50/30 focus:ring-amber-500/20 focus:border-amber-500'
-                    : 'border-slate-300 focus:ring-red-500/20 focus:border-red-500'
-                }`}
-                placeholder="18:00–19:30"
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                placeholder="Зал самбо №1"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Формат: ЧЧ:ММ–ЧЧ:ММ (напр. 17:30–19:00)</span>
             </div>
           </div>
 
-          {/* Hall Selection */}
+          {/* Time Slot */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Спортивный зал *
+              Время проведения *
             </label>
-            <div className="flex gap-2 mb-1.5">
-              {PRESET_HALLS.map(h => (
-                <button
-                  key={h}
-                  type="button"
-                  onClick={() => {
-                    setHall(h);
-                    setErrorMsg(null);
-                  }}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition border ${
-                    hall === h
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
-                  }`}
-                >
-                  {h}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {PRESET_SCHEDULE_TIMES.map(t => {
+                const isSelected =
+                  time === t ||
+                  time.trim().replace(/\./g, ':').replace(/\s*[\-\u2010-\u2015\u2212\uFE58\uFF0D–—]\s*/, '–') === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      setTime(t);
+                      setErrorMsg(null);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border font-mono ${
+                      isSelected
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
             </div>
             <input
               type="text"
               required
-              value={hall}
+              value={time}
               onChange={e => {
-                setHall(e.target.value);
+                setTime(e.target.value);
                 setErrorMsg(null);
               }}
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              placeholder="Зал самбо №1"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 ${
+                conflict.hasConflict
+                  ? 'border-amber-400 bg-amber-50/30 focus:ring-amber-500/20 focus:border-amber-500'
+                  : 'border-slate-300 focus:ring-red-500/20 focus:border-red-500'
+              }`}
+              placeholder="18:00–19:30"
             />
-          </div>
-
-          {/* Coach & Group Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Тренер *
-              </label>
-              <input
-                type="text"
-                required
-                value={coach}
-                onChange={e => {
-                  setCoach(e.target.value);
-                  setErrorMsg(null);
-                }}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                placeholder="Иванов А. В."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Группа / Секция *
-              </label>
-              <input
-                type="text"
-                required
-                value={group}
-                onChange={e => {
-                  setGroup(e.target.value);
-                  setErrorMsg(null);
-                }}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                placeholder="Группа 1"
-              />
-            </div>
+            <span className="text-[10px] text-slate-400 mt-1 block">Формат: ЧЧ:ММ–ЧЧ:ММ (напр. 17:30–19:00)</span>
           </div>
 
           {/* Notes / Special Focus */}
@@ -422,6 +697,25 @@ export const EditScheduleSlotModal: React.FC<Props> = ({
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Примечание (направленность занятия)
             </label>
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {PRESET_SCHEDULE_NOTES.map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => {
+                    setNotes(n);
+                    setErrorMsg(null);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border ${
+                    notes.trim() === n
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
             <input
               type="text"
               value={notes}
