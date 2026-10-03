@@ -6,7 +6,8 @@ import {
   DocType,
   DocumentRecord,
   Role,
-  IndividualTask
+  IndividualTask,
+  ScheduleSlot
 } from '../types';
 
 export const DEMO_TODAY = '2026-10-06';
@@ -544,4 +545,186 @@ export function isCoachForGroup(
   }
   return false;
 }
+
+// ==========================================
+// SCHEDULE & HALL CONFLICT DETECTION
+// ==========================================
+
+export interface TimeIntervalMinutes {
+  start: number;
+  end: number;
+}
+
+/**
+ * Parses time range string (e.g., "18:00–19:30", "18.00-19.30", "17:30 - 19:00") into minutes from midnight.
+ * Handles diverse unicode dashes, hyphens, and colon or dot time separators.
+ * Returns null for any invalid, malformed, or inverted intervals (start >= end).
+ */
+export function parseTimeInterval(timeStr?: string | null): TimeIntervalMinutes | null {
+  if (!timeStr || typeof timeStr !== 'string') return null;
+  const trimmed = timeStr.trim();
+  if (!trimmed) return null;
+
+  // Supports hyphen-minus, en-dash, em-dash, figure dash, horizontal bar, minus sign, etc.
+  const parts = trimmed.split(/\s*[\-\u2010-\u2015\u2212\uFE58\uFF0D–—]\s*/);
+  if (parts.length !== 2) return null;
+
+  const parsePart = (val: string): number | null => {
+    if (!val) return null;
+    // Supports both HH:MM and HH.MM formats
+    const match = /^(\d{1,2})[:.](\d{2})$/.exec(val.trim());
+    if (!match) return null;
+    const h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+    return h * 60 + m;
+  };
+
+  const start = parsePart(parts[0]);
+  const end = parsePart(parts[1]);
+
+  if (start === null || end === null || start >= end) return null;
+  return { start, end };
+}
+
+const RUSSIAN_DAY_CANONICAL: Record<string, string> = {
+  пн: 'понедельник',
+  понедельник: 'понедельник',
+  mon: 'понедельник',
+  monday: 'понедельник',
+  вт: 'вторник',
+  вторник: 'вторник',
+  tue: 'вторник',
+  tuesday: 'вторник',
+  ср: 'среда',
+  среда: 'среда',
+  wed: 'среда',
+  wednesday: 'среда',
+  чт: 'четверг',
+  четверг: 'четверг',
+  thu: 'четверг',
+  thursday: 'четверг',
+  пт: 'пятница',
+  пятница: 'пятница',
+  fri: 'пятница',
+  friday: 'пятница',
+  сб: 'суббота',
+  суббота: 'суббота',
+  sat: 'суббота',
+  saturday: 'суббота',
+  вс: 'воскресенье',
+  воскресенье: 'воскресенье',
+  sun: 'воскресенье',
+  sunday: 'воскресенье'
+};
+
+export function canonicalizeDay(day?: string | null): string {
+  if (!day || typeof day !== 'string') return '';
+  const clean = day.trim().toLowerCase().replace(/[^а-яёa-z]/gi, '');
+  return RUSSIAN_DAY_CANONICAL[clean] || clean;
+}
+
+export function canonicalizeHall(hall?: string | null): string {
+  if (!hall || typeof hall !== 'string') return '';
+  const clean = hall.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  // Hall 1 matching (№1, 1, первый, основной ковер, главный зал)
+  if (/(?:№\s*1(?!\d)|\b1\b|перв|основн|главн)/i.test(clean)) {
+    return 'зал 1';
+  }
+  // Hall 2 matching (№2, 2, второй, офп, акробатика)
+  if (/(?:№\s*2(?!\d)|\b2\b|втор|офп|акробат)/i.test(clean)) {
+    return 'зал 2';
+  }
+  return clean;
+}
+
+export interface ScheduleConflictResult {
+  hasConflict: boolean;
+  conflictingSlot?: ScheduleSlot;
+  message?: string;
+}
+
+/**
+ * Checks if a candidate schedule slot causes a double booking conflict in the specified hall.
+ * Evaluates overlapping time intervals on the same weekday and same hall.
+ * Ignores the slot being edited if candidate.id is provided.
+ * Fully null-safe: handles empty lists, undefined fields, and invalid candidates without throwing.
+ */
+export function checkScheduleConflict(
+  existingSlots: ScheduleSlot[],
+  candidate: { id?: string; day: string; time: string; hall: string }
+): ScheduleConflictResult {
+  if (!Array.isArray(existingSlots) || existingSlots.length === 0) {
+    return { hasConflict: false };
+  }
+
+  if (!candidate || typeof candidate !== 'object') {
+    return { hasConflict: false };
+  }
+
+  if (!candidate.day || !candidate.time || !candidate.hall) {
+    return { hasConflict: false };
+  }
+
+  const candInterval = parseTimeInterval(candidate.time);
+  if (!candInterval) {
+    return { hasConflict: false };
+  }
+
+  const candDay = canonicalizeDay(candidate.day);
+  const candHall = canonicalizeHall(candidate.hall);
+  if (!candDay || !candHall) {
+    return { hasConflict: false };
+  }
+
+  for (const slot of existingSlots) {
+    if (!slot || !slot.day || !slot.time || !slot.hall) continue;
+
+    // Ignore slot with candidate.id when editing
+    if (candidate.id && slot.id === candidate.id) {
+      continue;
+    }
+
+    const slotDay = canonicalizeDay(slot.day);
+    if (slotDay !== candDay) {
+      continue;
+    }
+
+    const slotHall = canonicalizeHall(slot.hall);
+    if (slotHall !== candHall) {
+      continue;
+    }
+
+    const slotInterval = parseTimeInterval(slot.time);
+    if (!slotInterval) {
+      continue;
+    }
+
+    // Interval overlap: [start, end)
+    const isOverlapping = candInterval.start < slotInterval.end && candInterval.end > slotInterval.start;
+
+    if (isOverlapping) {
+      const sportName =
+        slot.sportLabel ||
+        (slot.sport === 'karate'
+          ? 'Карате Кёкусинкай'
+          : slot.sport === 'fitness'
+          ? 'ОФП и акробатика'
+          : 'Самбо');
+
+      const groupName = slot.group || 'Занятие';
+      const coachName = slot.coach || 'Тренер не указан';
+
+      return {
+        hasConflict: true,
+        conflictingSlot: slot,
+        message: `Конфликт расписания в «${slot.hall}» (${slot.day}): время пересекается со слотом «${groupName}» (${sportName}, тренер ${coachName}, ${slot.time}).`
+      };
+    }
+  }
+
+  return { hasConflict: false };
+}
+
 

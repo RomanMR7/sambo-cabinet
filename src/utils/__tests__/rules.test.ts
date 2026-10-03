@@ -17,9 +17,13 @@ import {
   parseDateUtc,
   DEMO_TODAY,
   getCoachShortName,
-  isCoachForGroup
+  isCoachForGroup,
+  checkScheduleConflict,
+  parseTimeInterval,
+  canonicalizeDay,
+  canonicalizeHall
 } from '../rules';
-import { Athlete, TrainingSession, DocumentRecord, IndividualTask } from '../../types';
+import { Athlete, TrainingSession, DocumentRecord, IndividualTask, ScheduleSlot } from '../../types';
 
 // --- Test Mock Factories ---
 
@@ -698,6 +702,231 @@ describe('Надежность и граничные случаи (parseDateUtc,
     expect(row.isBlockedByUnmarked).toBe(false);
     expect(row.ratePercent).toBe(100);
     expect(row.statusBadge).toBe('ranked');
+  });
+});
+
+describe('Контроль конфликтов расписания залов и совместного использования (checkScheduleConflict)', () => {
+  it('1. parseTimeInterval корректно парсит различные форматы дефисов и пробелов', () => {
+    expect(parseTimeInterval('18:00–19:30')).toEqual({ start: 1080, end: 1170 });
+    expect(parseTimeInterval('18:00-19:30')).toEqual({ start: 1080, end: 1170 });
+    expect(parseTimeInterval('18:00 — 19:30')).toEqual({ start: 1080, end: 1170 });
+    expect(parseTimeInterval('18:00\u221219:30')).toEqual({ start: 1080, end: 1170 }); // unicode minus
+    expect(parseTimeInterval('18.00–19.30')).toEqual({ start: 1080, end: 1170 }); // dot separator
+    expect(parseTimeInterval('09.15 - 10.45')).toEqual({ start: 555, end: 645 });
+    expect(parseTimeInterval(' 09:15 - 10:45 ')).toEqual({ start: 555, end: 645 });
+    expect(parseTimeInterval('invalid')).toBeNull();
+    expect(parseTimeInterval('')).toBeNull();
+    expect(parseTimeInterval(null)).toBeNull();
+    expect(parseTimeInterval(undefined)).toBeNull();
+    expect(parseTimeInterval('20:00–19:00')).toBeNull(); // end before start
+    expect(parseTimeInterval('18:00–18:00')).toBeNull(); // zero duration
+    expect(parseTimeInterval('25:00–26:00')).toBeNull(); // invalid hours
+    expect(parseTimeInterval('18:60–19:00')).toBeNull(); // invalid minutes
+    expect(parseTimeInterval('18:00')).toBeNull(); // missing end
+    expect(parseTimeInterval('18:00 - 19:00 - 20:00')).toBeNull(); // too many parts
+  });
+
+  it('2. canonicalizeDay корректно нормализует русские и английские дни недели, а также сокращения с точками', () => {
+    expect(canonicalizeDay('Понедельник')).toBe('понедельник');
+    expect(canonicalizeDay('пн')).toBe('понедельник');
+    expect(canonicalizeDay('пн.')).toBe('понедельник');
+    expect(canonicalizeDay('Mon')).toBe('понедельник');
+    expect(canonicalizeDay('monday')).toBe('понедельник');
+    expect(canonicalizeDay('Сб')).toBe('суббота');
+    expect(canonicalizeDay('sat')).toBe('суббота');
+    expect(canonicalizeDay('saturday')).toBe('суббота');
+    expect(canonicalizeDay(null)).toBe('');
+    expect(canonicalizeDay(undefined)).toBe('');
+    expect(canonicalizeDay('')).toBe('');
+  });
+
+  it('3. canonicalizeHall корректно нормализует залы клуба и альтернативные обозначения', () => {
+    expect(canonicalizeHall('Зал самбо №1')).toBe('зал 1');
+    expect(canonicalizeHall('Зал 1')).toBe('зал 1');
+    expect(canonicalizeHall('Первый зал')).toBe('зал 1');
+    expect(canonicalizeHall('Основной ковёр')).toBe('зал 1');
+    expect(canonicalizeHall('Зал самбо №2 (ОФП)')).toBe('зал 2');
+    expect(canonicalizeHall('Зал 2')).toBe('зал 2');
+    expect(canonicalizeHall('Зал ОФП')).toBe('зал 2');
+    expect(canonicalizeHall('Второй зал')).toBe('зал 2');
+    expect(canonicalizeHall('Зал №10')).toBe('зал №10');
+    expect(canonicalizeHall('Зал №20')).toBe('зал №20');
+    expect(canonicalizeHall(null)).toBe('');
+    expect(canonicalizeHall(undefined)).toBe('');
+  });
+
+  const existingSlots: ScheduleSlot[] = [
+    {
+      id: 'slot-1',
+      day: 'Понедельник',
+      time: '17:30–19:00',
+      hall: 'Зал самбо №1',
+      sport: 'karate',
+      sportLabel: 'Карате Кёкусинкай',
+      coach: 'Васильев К. М.',
+      group: 'Карате (Юноши, Кёкусинкай)'
+    },
+    {
+      id: 'slot-2',
+      day: 'Понедельник',
+      time: '19:15–21:00',
+      hall: 'Зал самбо №1',
+      sport: 'sambo',
+      sportLabel: 'Самбо',
+      coach: 'Иванов А. В.',
+      group: 'Группа 3'
+    },
+    {
+      id: 'slot-3',
+      day: 'Суббота',
+      time: '10:00–11:30',
+      hall: 'Зал самбо №2 (ОФП)',
+      sport: 'fitness',
+      sportLabel: 'ОФП и акробатика',
+      coach: 'Иванов А. В.',
+      group: 'Группа 1 (ОФП)'
+    }
+  ];
+
+  it('4. Смежные слоты без наложения не вызывают конфликт (handover time 19:00 и 19:00)', () => {
+    // 17:30–19:00 заканчивается в 19:00, кандидат начинается ровно в 19:00
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '19:00–19:15',
+      hall: 'Зал самбо №1'
+    });
+    expect(res.hasConflict).toBe(false);
+
+    // Слот перед slot-1: 16:00–17:30 заканчивается ровно в 17:30, когда начинается slot-1
+    const res2 = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '16:00–17:30',
+      hall: 'Зал самбо №1'
+    });
+    expect(res2.hasConflict).toBe(false);
+  });
+
+  it('5. Пересечение даже в 1 минуту вызывает конфликт', () => {
+    // 18:59–19:30 пересекается со slot-1 на 1 минуту (18:59-19:00)
+    const res1 = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '18:59–19:30',
+      hall: 'Зал самбо №1'
+    });
+    expect(res1.hasConflict).toBe(true);
+    expect(res1.conflictingSlot?.id).toBe('slot-1');
+
+    // 17:00–17:31 пересекается со slot-1 на 1 минуту (17:30-17:31)
+    const res2 = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '17:00–17:31',
+      hall: 'Зал самбо №1'
+    });
+    expect(res2.hasConflict).toBe(true);
+    expect(res2.conflictingSlot?.id).toBe('slot-1');
+  });
+
+  it('6. Прямое пересечение времени в одном зале и в один день вызывает конфликт', () => {
+    // 18:00–19:30 пересекается со slot-1 (17:30–19:00)
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '18:00–19:30',
+      hall: 'Зал самбо №1'
+    });
+    expect(res.hasConflict).toBe(true);
+    expect(res.conflictingSlot?.id).toBe('slot-1');
+    expect(res.message).toContain('Карате');
+    expect(res.message).toContain('Васильев К. М.');
+  });
+
+  it('7. Полное поглощение интервала вызывает конфликт', () => {
+    // 17:00–21:30 поглощает и slot-1 и slot-2
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '17:00–21:30',
+      hall: 'Зал самбо №1'
+    });
+    expect(res.hasConflict).toBe(true);
+    expect(res.conflictingSlot?.id).toBe('slot-1');
+  });
+
+  it('8. Кандидат целиком внутри существующего слота вызывает конфликт', () => {
+    // 18:00–18:30 внутри slot-1 (17:30–19:00)
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '18:00–18:30',
+      hall: 'Зал самбо №1'
+    });
+    expect(res.hasConflict).toBe(true);
+    expect(res.conflictingSlot?.id).toBe('slot-1');
+  });
+
+  it('9. Разные залы в одно и то же время не вызывают конфликт', () => {
+    // Понедельник 17:30–19:00, но в Зале №2
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Понедельник',
+      time: '17:30–19:00',
+      hall: 'Зал самбо №2'
+    });
+    expect(res.hasConflict).toBe(false);
+  });
+
+  it('10. Разные дни недели не вызывают конфликт', () => {
+    // Вторник 17:30–19:00 в Зале №1
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Вторник',
+      time: '17:30–19:00',
+      hall: 'Зал самбо №1'
+    });
+    expect(res.hasConflict).toBe(false);
+  });
+
+  it('11. При редактировании собственный слот исключается из проверки конфликта', () => {
+    // Редактируем slot-1 (17:30–19:00) с тем же временем и залом
+    const res = checkScheduleConflict(existingSlots, {
+      id: 'slot-1',
+      day: 'Понедельник',
+      time: '17:30–19:00',
+      hall: 'Зал самбо №1'
+    });
+    expect(res.hasConflict).toBe(false);
+  });
+
+  it('12. Поддержка сокращенного названия дня (Пн) и нормализации залов', () => {
+    const res = checkScheduleConflict(existingSlots, {
+      day: 'Пн',
+      time: '18:15–18:45',
+      hall: 'Зал самбо № 1'
+    });
+    expect(res.hasConflict).toBe(true);
+    expect(res.conflictingSlot?.id).toBe('slot-1');
+  });
+
+  it('13. Корректное сопоставление Зала №2 (ОФП) и Зала №2 / Зала ОФП', () => {
+    const res1 = checkScheduleConflict(existingSlots, {
+      day: 'Суббота',
+      time: '10:30–12:00',
+      hall: 'Зал самбо №2'
+    });
+    expect(res1.hasConflict).toBe(true);
+    expect(res1.conflictingSlot?.id).toBe('slot-3');
+
+    const res2 = checkScheduleConflict(existingSlots, {
+      day: 'Суббота',
+      time: '10:30–12:00',
+      hall: 'Зал ОФП'
+    });
+    expect(res2.hasConflict).toBe(true);
+    expect(res2.conflictingSlot?.id).toBe('slot-3');
+  });
+
+  it('14. Null safety: checkScheduleConflict не падает при некорректных входных данных', () => {
+    expect(checkScheduleConflict([], { day: 'Пн', time: '18:00–19:00', hall: 'Зал 1' })).toEqual({ hasConflict: false });
+    expect(checkScheduleConflict(null as any, { day: 'Пн', time: '18:00–19:00', hall: 'Зал 1' })).toEqual({ hasConflict: false });
+    expect(checkScheduleConflict(undefined as any, { day: 'Пн', time: '18:00–19:00', hall: 'Зал 1' })).toEqual({ hasConflict: false });
+    expect(checkScheduleConflict(existingSlots, null as any)).toEqual({ hasConflict: false });
+    expect(checkScheduleConflict(existingSlots, { day: '', time: '', hall: '' })).toEqual({ hasConflict: false });
+    expect(checkScheduleConflict(existingSlots, { day: 'Пн', time: 'invalid', hall: 'Зал 1' })).toEqual({ hasConflict: false });
   });
 });
 

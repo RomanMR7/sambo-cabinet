@@ -15,6 +15,7 @@ import { VerifierView } from './views/verifier/VerifierView';
 import { ParentView } from './views/parent/ParentView';
 import { AthleteView } from './views/athlete/AthleteView';
 import { AdminView } from './views/admin/AdminView';
+import { HallCalendarView } from './components/calendar/HallCalendarView';
 import {
   Menu,
   Calendar,
@@ -40,6 +41,8 @@ export const App: React.FC = () => {
         return <AthletesView />;
       case 'athlete_detail':
         return <AthleteDetailView />;
+      case 'schedule':
+        return <HallCalendarView />;
       case 'training_plans':
         return <TrainingPlansView />;
       case 'sessions':

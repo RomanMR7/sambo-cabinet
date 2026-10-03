@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Building,
   Edit,
-  Plus,
   Database,
   Download,
   Upload,
@@ -21,9 +20,8 @@ import {
   UserPlus
 } from 'lucide-react';
 import { EditGroupModal } from '../../components/modals/EditGroupModal';
-import { EditScheduleSlotModal } from '../../components/modals/EditScheduleSlotModal';
 import { AddStaffModal } from '../../components/modals/AddStaffModal';
-import { ScheduleSlot } from '../../types';
+import { HallCalendarView } from '../../components/calendar/HallCalendarView';
 
 export const AdminView: React.FC = () => {
   const {
@@ -34,7 +32,6 @@ export const AdminView: React.FC = () => {
     toggleVerifierRole,
     deleteClubUser,
     athletes,
-    scheduleSlots,
     activeNav,
     setActiveNav,
     downloadBackup,
@@ -45,7 +42,6 @@ export const AdminView: React.FC = () => {
 
   const [securityModalOpen, setSecurityModalOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
-  const [editingSlot, setEditingSlot] = useState<ScheduleSlot | null | undefined>(undefined);
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -363,61 +359,7 @@ export const AdminView: React.FC = () => {
 
       {/* TAB 2: ADMIN SCHEDULE */}
       {navTab === 'admin_schedule' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">Сетка расписания залов и групп</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Назначение тренировочных дней, залов и тренерского состава
-              </p>
-            </div>
-
-            <button
-              onClick={() => setEditingSlot(null)}
-              className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Добавить занятие в сетку</span>
-            </button>
-          </div>
-
-          {scheduleSlots.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
-              Сетка расписания пуста. Добавьте первое занятие с помощью кнопки выше.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {scheduleSlots.map(item => (
-                <div key={item.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-black text-slate-900 text-base">{item.day}</span>
-                    <span className="text-xs font-mono font-bold bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">
-                      {item.time}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1 text-xs text-slate-600">
-                    <div><strong>Зал:</strong> {item.hall}</div>
-                    <div><strong>Тренер:</strong> {item.coach}</div>
-                    <div><strong>Группа:</strong> {item.group}</div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                      Утверждено
-                    </span>
-                    <button
-                      onClick={() => setEditingSlot(item)}
-                      className="text-xs font-bold text-red-600 hover:underline"
-                    >
-                      Изменить
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <HallCalendarView />
       )}
 
       {/* TAB 3: ADMIN ROLES & USERS */}
@@ -787,15 +729,6 @@ export const AdminView: React.FC = () => {
         <AddStaffModal
           onClose={() => setIsAddStaffOpen(false)}
           onSaved={(name) => showToast(`Сотрудник ${name} успешно внесен в реестр клуба!`)}
-        />
-      )}
-
-      {/* Edit Schedule Slot Modal */}
-      {editingSlot !== undefined && (
-        <EditScheduleSlotModal
-          slot={editingSlot}
-          onClose={() => setEditingSlot(undefined)}
-          onSaved={() => showToast('Расписание успешно обновлено!')}
         />
       )}
     </div>

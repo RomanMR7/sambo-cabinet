@@ -334,9 +334,31 @@ function getValidatedState(raw: any): AppState {
     : defaults.groupInfo;
 
   // Validate scheduleSlots
-  const scheduleSlots = (Array.isArray(raw.scheduleSlots) && raw.scheduleSlots.length > 0)
-    ? raw.scheduleSlots.filter((sl: any) => sl && typeof sl === 'object' && typeof sl.id === 'string')
-    : defaults.scheduleSlots;
+  let scheduleSlots: ScheduleSlot[] = defaults.scheduleSlots;
+  if (Array.isArray(raw.scheduleSlots) && raw.scheduleSlots.length > 0) {
+    const isLegacySeed =
+      raw.scheduleSlots.length === 3 &&
+      raw.scheduleSlots.every((s: any) => ['sch-1', 'sch-2', 'sch-3'].includes(s?.id) && !s?.sport);
+
+    if (isLegacySeed) {
+      scheduleSlots = defaults.scheduleSlots;
+    } else {
+      scheduleSlots = raw.scheduleSlots
+        .filter((sl: any) => sl && typeof sl === 'object' && typeof sl.id === 'string')
+        .map((sl: any) => ({
+          id: String(sl.id),
+          day: typeof sl.day === 'string' && sl.day.trim() ? sl.day.trim() : 'Понедельник',
+          time: typeof sl.time === 'string' && sl.time.trim() ? sl.time.trim() : '18:00–19:00',
+          hall: typeof sl.hall === 'string' && sl.hall.trim() ? sl.hall.trim() : 'Зал самбо №1',
+          coach: typeof sl.coach === 'string' && sl.coach.trim() ? sl.coach.trim() : 'Иванов А. В.',
+          group: typeof sl.group === 'string' && sl.group.trim() ? sl.group.trim() : 'Группа 1',
+          sport: ['sambo', 'karate', 'fitness'].includes(sl.sport) ? sl.sport : undefined,
+          sportLabel: typeof sl.sportLabel === 'string' && sl.sportLabel.trim() ? sl.sportLabel.trim() : undefined,
+          colorTheme: ['red', 'emerald', 'blue', 'amber'].includes(sl.colorTheme) ? sl.colorTheme : undefined,
+          notes: typeof sl.notes === 'string' && sl.notes.trim() ? sl.notes.trim() : undefined
+        }));
+    }
+  }
 
   // Validate groups
   const groups = (Array.isArray(raw.groups) && raw.groups.length > 0)

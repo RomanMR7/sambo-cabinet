@@ -86,6 +86,7 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
         return [
           { id: 'today', label: 'Сегодня', icon: Calendar },
           { id: 'athletes', label: 'Спортсмены', icon: Users },
+          { id: 'schedule', label: 'Расписание залов', icon: Calendar },
           { id: 'training_plans', label: 'Планы тренировок', icon: BookOpen },
           { id: 'sessions', label: 'Занятия', icon: Dumbbell },
           { id: 'development', label: 'Развитие', icon: Award },

@@ -142,13 +142,19 @@ export interface GroupInfo {
   athleteCount: number;
 }
 
+export type SportDiscipline = 'sambo' | 'karate' | 'fitness';
+
 export interface ScheduleSlot {
   id: string;
-  day: string;
-  time: string;
-  hall: string;
+  day: string; // 'Понедельник' | 'Вторник' | ... | 'Воскресенье'
+  time: string; // '18:00–19:30'
+  hall: string; // 'Зал самбо №1' | 'Зал самбо №2 (ОФП)'
+  sport?: SportDiscipline;
+  sportLabel?: string; // 'Самбо' | 'Карате Кёкусинкай' | 'ОФП и акробатика'
   coach: string;
   group: string;
+  colorTheme?: 'red' | 'emerald' | 'blue' | 'amber';
+  notes?: string;
 }
 
 export interface ClubUser {

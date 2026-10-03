@@ -869,8 +869,149 @@ export const initialExercises: ExerciseItem[] = [
 ];
 
 export const initialScheduleSlots: ScheduleSlot[] = [
-  { id: 'sch-1', day: 'Вторник', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
-  { id: 'sch-2', day: 'Четверг', time: '18:00–19:00', hall: 'Зал самбо №1', coach: 'Иванов А. В.', group: 'Группа 1' },
-  { id: 'sch-3', day: 'Суббота', time: '10:00–11:30', hall: 'Зал самбо №2', coach: 'Иванов А. В.', group: 'Группа 1 (ОФП)' },
+  {
+    id: 'sch-1',
+    day: 'Понедельник',
+    time: '17:30–19:00',
+    hall: 'Зал самбо №1',
+    sport: 'karate',
+    sportLabel: 'Карате Кёкусинкай',
+    coach: 'Васильев К. М.',
+    group: 'Карате (Юноши, Кёкусинкай)',
+    colorTheme: 'emerald',
+    notes: 'Базовая техника кихон и ката'
+  },
+  {
+    id: 'sch-2',
+    day: 'Понедельник',
+    time: '19:15–21:00',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Иванов А. В.',
+    group: 'Группа 3',
+    colorTheme: 'red',
+    notes: 'Спортивное совершенствование'
+  },
+  {
+    id: 'sch-3',
+    day: 'Вторник',
+    time: '18:00–19:00',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Иванов А. В.',
+    group: 'Группа 1',
+    colorTheme: 'red',
+    notes: 'Начальная подготовка'
+  },
+  {
+    id: 'sch-4',
+    day: 'Вторник',
+    time: '19:15–20:45',
+    hall: 'Зал самбо №1',
+    sport: 'karate',
+    sportLabel: 'Карате Кёкусинкай',
+    coach: 'Васильев К. М.',
+    group: 'Карате (Взрослые, ката и кумитэ)',
+    colorTheme: 'emerald',
+    notes: 'Ката и кумитэ'
+  },
+  {
+    id: 'sch-5',
+    day: 'Среда',
+    time: '17:00–18:30',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Петров С. Н.',
+    group: 'Группа 2',
+    colorTheme: 'red',
+    notes: 'Учебно-тренировочная'
+  },
+  {
+    id: 'sch-6',
+    day: 'Среда',
+    time: '18:45–20:30',
+    hall: 'Зал самбо №1',
+    sport: 'karate',
+    sportLabel: 'Карате Кёкусинкай',
+    coach: 'Васильев К. М.',
+    group: 'Карате (Юноши, спарринги)',
+    colorTheme: 'emerald',
+    notes: 'Спарринговая практика'
+  },
+  {
+    id: 'sch-7',
+    day: 'Четверг',
+    time: '18:00–19:00',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Иванов А. В.',
+    group: 'Группа 1',
+    colorTheme: 'red',
+    notes: 'Начальная подготовка'
+  },
+  {
+    id: 'sch-8',
+    day: 'Четверг',
+    time: '19:15–20:45',
+    hall: 'Зал самбо №1',
+    sport: 'karate',
+    sportLabel: 'Карате Кёкусинкай',
+    coach: 'Васильев К. М.',
+    group: 'Карате (Взрослые)',
+    colorTheme: 'emerald',
+    notes: 'Отработка тактики ведения боя'
+  },
+  {
+    id: 'sch-9',
+    day: 'Пятница',
+    time: '17:00–18:30',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Петров С. Н.',
+    group: 'Группа 2',
+    colorTheme: 'red',
+    notes: 'Бросковая техника'
+  },
+  {
+    id: 'sch-10',
+    day: 'Пятница',
+    time: '19:00–21:00',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Иванов А. В.',
+    group: 'Группа 3',
+    colorTheme: 'red',
+    notes: 'Борьба в партере и стойке'
+  },
+  {
+    id: 'sch-11',
+    day: 'Суббота',
+    time: '10:00–11:30',
+    hall: 'Зал самбо №2 (ОФП)',
+    sport: 'fitness',
+    sportLabel: 'ОФП и акробатика',
+    coach: 'Иванов А. В.',
+    group: 'Группа 1 (ОФП)',
+    colorTheme: 'amber',
+    notes: 'Общая и специальная физическая подготовка'
+  },
+  {
+    id: 'sch-12',
+    day: 'Суббота',
+    time: '12:00–14:00',
+    hall: 'Зал самбо №1',
+    sport: 'sambo',
+    sportLabel: 'Самбо',
+    coach: 'Иванов А. В.',
+    group: 'День борьбы / Открытый ковёр (Самбо)',
+    colorTheme: 'red',
+    notes: 'Контрольные схватки и открытый ковёр'
+  }
 ];
 
