@@ -57,6 +57,10 @@ export const TodayView: React.FC = () => {
   };
 
   const handleOpenSession = (sessionId: string) => {
+    const targetSession = (Array.isArray(sessions) ? sessions : []).find(s => s && s.id === sessionId);
+    if (targetSession) {
+      setSelectedGroupId(targetSession.groupId);
+    }
     setSelectedSessionId(sessionId);
     setActiveNav('sessions');
   };
@@ -483,9 +487,29 @@ export const TodayView: React.FC = () => {
                 </div>
               </div>
               <div className="mt-3">
-                <div className="text-2xl font-extrabold text-slate-900">{pendingDocsCount} на проверке</div>
-                <div className="text-xs text-amber-600 font-semibold mt-1 flex items-center gap-1">
-                  <span>Требуют обновления / проверки</span>
+                <div className="text-2xl font-extrabold text-slate-900">
+                  {pendingDocsCount > 0
+                    ? `${pendingDocsCount} на проверке`
+                    : expiringDocs.length > 0
+                    ? `${expiringDocs.length} истекают`
+                    : 'Все в норме'}
+                </div>
+                <div
+                  className={`text-xs ${
+                    pendingDocsCount > 0 || expiringDocs.length > 0
+                      ? 'text-amber-600 font-semibold'
+                      : 'text-slate-500'
+                  } mt-1 flex items-center gap-1`}
+                >
+                  <span className="truncate">
+                    {pendingDocsCount > 0 && expiringDocs.length > 0
+                      ? `Истекают: ${expiringDocs.length} • На проверке: ${pendingDocsCount}`
+                      : pendingDocsCount > 0
+                      ? 'Ожидают подтверждения'
+                      : expiringDocs.length > 0
+                      ? 'Требуют продления у родителей'
+                      : 'Медсправки и страховки в норме'}
+                  </span>
                   <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1 shrink-0" />
                 </div>
               </div>

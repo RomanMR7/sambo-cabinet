@@ -295,18 +295,34 @@ export const HallCalendarView: React.FC = () => {
     return getWeekDays(currentDate);
   }, [currentDate]);
 
-  // Quick Month dropdown options ensuring the currently displayed month is always represented
+  // Quick Month dropdown options ensuring the currently displayed month and today's month are always represented
   const monthDropdownOptions = useMemo(() => {
+    const todayStr = getTodayDate();
+    const todayPrefix = todayStr.slice(0, 7);
+    const [tY, tM] = todayStr.split('-').map(Number);
     const currentMonthPrefix = currentDate.slice(0, 7);
-    const existing = QUICK_MONTHS.find(qm => qm.date.startsWith(currentMonthPrefix));
-    if (existing) return QUICK_MONTHS;
-    return [
-      ...QUICK_MONTHS,
-      {
+
+    const map = new Map<string, { label: string; date: string }>();
+
+    for (const qm of QUICK_MONTHS) {
+      map.set(qm.date.slice(0, 7), qm);
+    }
+
+    if (!map.has(todayPrefix)) {
+      map.set(todayPrefix, {
+        label: `${MONTH_NAMES[(tM || 1) - 1]} ${tY}`,
+        date: todayStr
+      });
+    }
+
+    if (!map.has(currentMonthPrefix)) {
+      map.set(currentMonthPrefix, {
         label: `${MONTH_NAMES[currentMonthIndex]} ${currentYear}`,
         date: `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-01`
-      }
-    ].sort((a, b) => a.date.localeCompare(b.date));
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [currentDate, currentMonthIndex, currentYear]);
 
   // Day timeline renderer for Day Matrix View (eliminates duplicated slots and highlights free windows)
