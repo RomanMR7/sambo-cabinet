@@ -26,11 +26,12 @@ import {
   HeartHandshake,
   Clock,
   Settings,
-  MoreHorizontal
+  MoreHorizontal,
+  FileText
 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const { role, activeNav, setActiveNav } = useApp();
+  const { role, activeNav, setActiveNav, documentRequests } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const renderCoachContent = () => {
@@ -94,10 +95,23 @@ export const App: React.FC = () => {
           { id: 'athlete_tasks', label: 'Задачи', icon: BarChart3 },
         ];
       case 'parent':
+        const parentRequestsCount = (documentRequests || []).filter(
+          r => r && r.athleteId === 'ath-1' && r.status === 'pending'
+        ).length;
         return [
-          { id: 'parent_main', label: 'Ребёнок', icon: HeartHandshake },
+          {
+            id: 'parent_main',
+            label: 'Ребёнок',
+            icon: HeartHandshake,
+            badge: parentRequestsCount > 0 ? parentRequestsCount : undefined
+          },
           { id: 'parent_attendance', label: 'Пропуски', icon: Dumbbell },
-          { id: 'parent_documents', label: 'Документы', icon: Calendar },
+          {
+            id: 'parent_documents',
+            label: 'Документы',
+            icon: FileText,
+            badge: parentRequestsCount > 0 ? parentRequestsCount : undefined
+          },
         ];
       case 'verifier':
         return [
@@ -182,7 +196,14 @@ export const App: React.FC = () => {
                 isActive ? 'text-red-500 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-red-500' : 'text-slate-400'}`} />
+              <div className="relative">
+                <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-red-500' : 'text-slate-400'}`} />
+                {(item as any).badge !== undefined && (item as any).badge > 0 && (
+                  <span className="absolute -top-1 -right-2 px-1 text-[9px] font-black rounded-full bg-amber-400 text-slate-950">
+                    {(item as any).badge}
+                  </span>
+                )}
+              </div>
               <span>{item.label}</span>
             </button>
           );

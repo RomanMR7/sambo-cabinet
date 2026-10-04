@@ -8,13 +8,14 @@ import {
   Eye,
   Search,
   Users,
-  Clock
+  Clock,
+  Send
 } from 'lucide-react';
 import { DocumentViewModal } from '../../components/modals/DocumentViewModal';
 import { UploadDocumentModal } from '../../components/modals/UploadDocumentModal';
 
 export const DocumentsView: React.FC = () => {
-  const { documents, athletes, groups, selectedAthleteId, setSelectedAthleteId, setActiveNav, role } = useApp();
+  const { documents, athletes, groups, selectedAthleteId, setSelectedAthleteId, setActiveNav, role, documentRequests, requestDocumentUpdate } = useApp();
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
   const [sortByExpiry, setSortByExpiry] = useState<boolean>(false);
@@ -269,15 +270,45 @@ export const DocumentsView: React.FC = () => {
                       Истекает
                     </span>
                   )}
+                  {expiryStatus === 'expired' && (
+                    <span className="text-[11px] font-bold text-red-800 bg-red-100 px-2 py-0.5 rounded border border-red-300 ml-1">
+                      Истёк
+                    </span>
+                  )}
+                  {(documentRequests || []).some(
+                    r => r && r.athleteId === doc.athleteId && r.docType === doc.type && r.status === 'pending'
+                  ) && (
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 ml-1 inline-flex items-center gap-1">
+                      <Send className="w-2.5 h-2.5" /> Запрошено
+                    </span>
+                  )}
                 </div>
 
-                <button
-                  onClick={() => setPreviewDoc(doc)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Открыть</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {role === 'coach' && (expiryStatus === 'expiring_soon' || expiryStatus === 'expired' || doc.verificationStatus === 'has_remarks') && (
+                    <button
+                      onClick={() => requestDocumentUpdate(doc.athleteId, doc.type, undefined, doc.title)}
+                      className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold flex items-center gap-1 transition"
+                      title="Запросить обновление документа у родителя"
+                    >
+                      <Send className="w-3.5 h-3.5 text-amber-700" />
+                      <span>
+                        {(documentRequests || []).some(
+                          r => r && r.athleteId === doc.athleteId && r.docType === doc.type && r.status === 'pending'
+                        )
+                          ? 'Напомнить'
+                          : 'Запросить'}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setPreviewDoc(doc)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Открыть</span>
+                  </button>
+                </div>
               </div>
             </div>
           );

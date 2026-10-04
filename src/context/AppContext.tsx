@@ -17,7 +17,8 @@ import {
   AdmissionDecision,
   ScheduleSlot,
   ClubUser,
-  ExerciseItem
+  ExerciseItem,
+  DocumentRequest
 } from '../types';
 import {
   initialAthletes,
@@ -117,6 +118,7 @@ export interface AppState {
   selectedAthleteId: string;
   selectedSessionId: string;
   activeNav: string;
+  documentRequests: DocumentRequest[];
 }
 
 export interface AppContextType extends AppState {
@@ -134,6 +136,8 @@ export interface AppContextType extends AppState {
   verifyDocument: (docId: string, status: VerificationStatus, comment?: string) => void;
   updateAdmissionDecision: (athleteId: string, decision: AdmissionDecision) => void;
   uploadDocument: (athleteId: string, doc: Partial<DocumentRecord>) => void;
+  requestDocumentUpdate: (athleteId: string, docType: DocType, message?: string, title?: string) => void;
+  resolveDocumentRequest: (requestId: string) => void;
   addObservationTask: (task: Omit<IndividualTask, 'id'>) => void;
   toggleTaskStatus: (taskId: string, status: 'active' | 'completed' | 'needs_review') => void;
   recordSkillCheck: (athleteId: string, skillId: string, checkIndex: number, success: boolean | null) => void;
@@ -204,7 +208,8 @@ function getDefaultState(): AppState {
     exercises: initialExercises,
     selectedAthleteId: 'ath-1',
     selectedSessionId: 'ses-today',
-    activeNav: 'today'
+    activeNav: 'today',
+    documentRequests: []
   };
 }
 
@@ -396,6 +401,23 @@ function getValidatedState(raw: any): AppState {
     ? raw.selectedGroupId
     : (safeGroups[0]?.id || 'grp-1');
 
+  // Validate documentRequests
+  const documentRequests: DocumentRequest[] = Array.isArray(raw.documentRequests)
+    ? raw.documentRequests
+        .filter((r: any) => r && typeof r === 'object' && typeof r.id === 'string' && typeof r.athleteId === 'string')
+        .map((r: any) => ({
+          id: r.id,
+          athleteId: r.athleteId,
+          docType: ['medical', 'insurance', 'consent'].includes(r.docType) ? r.docType : 'insurance',
+          title: typeof r.title === 'string' && r.title ? r.title : 'Документ',
+          message: typeof r.message === 'string' && r.message ? r.message : 'Требуется обновить документ.',
+          requestedAt: typeof r.requestedAt === 'string' && r.requestedAt ? r.requestedAt : '2026-10-06',
+          requestedBy: typeof r.requestedBy === 'string' && r.requestedBy ? r.requestedBy : 'Тренер',
+          status: r.status === 'resolved' ? ('resolved' as const) : ('pending' as const),
+          resolvedAt: typeof r.resolvedAt === 'string' ? r.resolvedAt : undefined
+        }))
+    : defaults.documentRequests;
+
   return {
     role,
     activeCoachId: safeActiveCoachId,
@@ -416,7 +438,8 @@ function getValidatedState(raw: any): AppState {
     exercises: safeExercises,
     selectedAthleteId: safeSelectedAthleteId,
     selectedSessionId: safeSelectedSessionId,
-    activeNav: typeof raw.activeNav === 'string' ? raw.activeNav : defaults.activeNav
+    activeNav: typeof raw.activeNav === 'string' ? raw.activeNav : defaults.activeNav,
+    documentRequests
   };
 }
 
@@ -738,8 +761,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         newDocList.push(newRecord);
       }
 
-      return { ...prev, documents: newDocList };
+      // Automatically resolve pending document requests for this athlete and docType
+      const updatedRequests = (Array.isArray(prev.documentRequests) ? prev.documentRequests : []).map(r => {
+        if (r && r.athleteId === athleteId && r.docType === doc.type && r.status === 'pending') {
+          return {
+            ...r,
+            status: 'resolved' as const,
+            resolvedAt: '2026-10-06'
+          };
+        }
+        return r;
+      });
+
+      return {
+        ...prev,
+        documents: newDocList,
+        documentRequests: updatedRequests
+      };
     });
+  }, []);
+
+  const requestDocumentUpdate = useCallback((athleteId: string, docType: DocType, message?: string, title?: string) => {
+    setState(prev => {
+      const coach = (Array.isArray(prev.clubUsers) ? prev.clubUsers : []).find(u => u && u.id === prev.activeCoachId);
+      const coachName = coach ? getCoachShortName(coach.fullName) : 'Тренер';
+      const defaultTitle = docType === 'insurance'
+        ? 'Страховой полис от несчастных случаев'
+        : docType === 'medical'
+        ? 'Медицинский документ (справка / допуск)'
+        : 'Согласие родителя на участие';
+
+      const existingDoc = (Array.isArray(prev.documents) ? prev.documents : []).find(
+        d => d && d.athleteId === athleteId && d.type === docType
+      );
+
+      const defaultMessage = message || (
+        existingDoc?.expiryDate
+          ? `Срок действия документа (${title || existingDoc.title || defaultTitle}) истекает ${existingDoc.expiryDate}. Пожалуйста, загрузите обновлённый документ для продления спортивного допуска.`
+          : `Требуется предоставить актуальный документ (${title || defaultTitle}) для допуска к тренировкам.`
+      );
+
+      const prevRequests = Array.isArray(prev.documentRequests) ? prev.documentRequests : [];
+      const existingIndex = prevRequests.findIndex(
+        r => r && r.athleteId === athleteId && r.docType === docType && r.status === 'pending'
+      );
+
+      const newRequest: DocumentRequest = {
+        id: existingIndex !== -1 ? prevRequests[existingIndex].id : `req-${Date.now()}`,
+        athleteId,
+        docType,
+        title: title || (existingIndex !== -1 ? prevRequests[existingIndex].title : existingDoc?.title || defaultTitle),
+        message: defaultMessage,
+        requestedAt: '2026-10-06',
+        requestedBy: `${coachName} (Тренер)`,
+        status: 'pending'
+      };
+
+      let updatedRequests: DocumentRequest[];
+      if (existingIndex !== -1) {
+        updatedRequests = [...prevRequests];
+        updatedRequests[existingIndex] = newRequest;
+      } else {
+        updatedRequests = [newRequest, ...prevRequests];
+      }
+
+      return {
+        ...prev,
+        documentRequests: updatedRequests
+      };
+    });
+  }, []);
+
+  const resolveDocumentRequest = useCallback((requestId: string) => {
+    setState(prev => ({
+      ...prev,
+      documentRequests: (Array.isArray(prev.documentRequests) ? prev.documentRequests : []).map(r =>
+        r && r.id === requestId ? { ...r, status: 'resolved' as const, resolvedAt: '2026-10-06' } : r
+      )
+    }));
   }, []);
 
   const addObservationTask = (taskData: Omit<IndividualTask, 'id'>) => {
@@ -1465,6 +1564,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         verifyDocument,
         updateAdmissionDecision,
         uploadDocument,
+        requestDocumentUpdate,
+        resolveDocumentRequest,
         addObservationTask,
         toggleTaskStatus,
         recordSkillCheck,

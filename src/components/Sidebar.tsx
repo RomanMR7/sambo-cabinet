@@ -26,10 +26,15 @@ interface Props {
 }
 
 export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
-  const { role, activeNav, setActiveNav, documents, clubUsers, activeCoachId, groups, selectedGroupId } = useApp();
+  const { role, activeNav, setActiveNav, documents, clubUsers, activeCoachId, groups, selectedGroupId, documentRequests } = useApp();
 
   // Pending docs count for verifier badge
   const pendingDocsCount = documents.filter(d => d.verificationStatus === 'unverified').length;
+
+  // Pending document renewal requests count for parent
+  const parentPendingRequestsCount = (documentRequests || []).filter(
+    r => r && r.athleteId === 'ath-1' && r.status === 'pending'
+  ).length;
 
   const headManager =
     clubUsers?.find(u => u.isHeadManager) ||
@@ -102,9 +107,19 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
         ];
       case 'parent':
         return [
-          { id: 'parent_main', label: 'Мой ребёнок', icon: HeartHandshake },
+          {
+            id: 'parent_main',
+            label: 'Мой ребёнок',
+            icon: HeartHandshake,
+            badge: parentPendingRequestsCount > 0 ? parentPendingRequestsCount : undefined
+          },
           { id: 'parent_attendance', label: 'Занятия и пропуски', icon: Dumbbell },
-          { id: 'parent_documents', label: 'Документы ребёнка', icon: FileText },
+          {
+            id: 'parent_documents',
+            label: 'Документы ребёнка',
+            icon: FileText,
+            badge: parentPendingRequestsCount > 0 ? parentPendingRequestsCount : undefined
+          },
           { id: 'parent_tasks', label: 'Задачи тренера', icon: Award },
         ];
       case 'athlete':

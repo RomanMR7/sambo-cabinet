@@ -6,10 +6,11 @@ import { X, Upload, FileText, AlertCircle } from 'lucide-react';
 interface Props {
   athleteId: string;
   defaultType?: DocType;
+  onSuccess?: () => void;
   onClose: () => void;
 }
 
-export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 'medical', onClose }) => {
+export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 'medical', onSuccess, onClose }) => {
   const { uploadDocument, athletes } = useApp();
   const athlete = athletes.find(a => a.id === athleteId);
 
@@ -26,6 +27,17 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
   const [fileName, setFileName] = useState('');
   const [fileSelected, setFileSelected] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDocType(defaultType);
+    setTitle(
+      defaultType === 'medical'
+        ? 'Медицинский документ'
+        : defaultType === 'insurance'
+        ? 'Страховой полис'
+        : 'Согласие на участие'
+    );
+  }, [defaultType]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -104,6 +116,9 @@ export const UploadDocumentModal: React.FC<Props> = ({ athleteId, defaultType = 
         expiryDate: docType === 'consent' ? undefined : expiryDate
       });
 
+      if (onSuccess) {
+        onSuccess();
+      }
       onClose();
     } finally {
       setIsSubmitting(false);

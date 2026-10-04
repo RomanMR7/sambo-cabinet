@@ -15,7 +15,8 @@ import {
   FolderPlus,
   ChevronLeft,
   MapPin,
-  User
+  User,
+  Send
 } from 'lucide-react';
 import {
   getDocumentExpiryStatus,
@@ -48,7 +49,9 @@ export const TodayView: React.FC = () => {
     groups,
     sessions,
     activeCoachId,
-    clubUsers
+    clubUsers,
+    documentRequests,
+    requestDocumentUpdate
   } = useApp();
 
   const handleOpenAthleteDocs = (athleteId: string) => {
@@ -791,31 +794,53 @@ export const TodayView: React.FC = () => {
                     {expiringDocs.slice(0, 2).map(doc => {
                       const ath = coachAthletes.find(a => a.id === doc.athleteId);
                       const isExpired = getDocumentExpiryStatus(doc.expiryDate) === 'expired';
+                      const isReqPending = (documentRequests || []).some(
+                        r => r && r.athleteId === doc.athleteId && r.docType === doc.type && r.status === 'pending'
+                      );
                       return (
                         <div
                           key={doc.id}
                           onClick={() => handleOpenAthleteDocs(doc.athleteId)}
-                          className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition cursor-pointer flex items-center justify-between"
+                          className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition cursor-pointer flex items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+                            <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0">
                               {ath?.avatarInitials || 'СП'}
                             </div>
                             <div>
-                              <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <div className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                                 <span>
                                   {doc.title}: {isExpired ? 'истёк' : 'скоро истекает'}
                                 </span>
                                 <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-200 text-amber-800">
                                   до {doc.expiryDate}
                                 </span>
+                                {isReqPending && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1">
+                                    <Send className="w-3 h-3 text-blue-600" /> Запрос отправлен
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-xs text-slate-500">
-                                {ath?.shortName} • Требуется запросить продление у родителя
+                              <div className="text-xs text-slate-500 mt-0.5">
+                                {ath?.shortName} • {isReqPending ? 'Родитель уведомлен о продлении' : 'Требуется запросить продление у родителя'}
                               </div>
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-400" />
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                requestDocumentUpdate(doc.athleteId, doc.type, undefined, doc.title);
+                              }}
+                              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-white transition flex items-center gap-1 shadow-2xs"
+                              title="Отправить родителю уведомление о продлении документа"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>{isReqPending ? 'Повторить' : 'Запросить'}</span>
+                            </button>
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                          </div>
                         </div>
                       );
                     })}

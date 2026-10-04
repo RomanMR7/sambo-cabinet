@@ -23,6 +23,18 @@ export interface DocumentRecord {
   isRestrictedMedical: boolean; // Медкопии скрыты для Admin
 }
 
+export interface DocumentRequest {
+  id: string;
+  athleteId: string;
+  docType: DocType;
+  title: string;
+  message: string;
+  requestedAt: string; // ISO format (e.g. "2026-10-06")
+  requestedBy: string; // e.g. "Иванов А. В. (Тренер)"
+  status: 'pending' | 'resolved';
+  resolvedAt?: string;
+}
+
 export interface AdmissionDecision {
   status: AdmissionStatus;
   basis: string;

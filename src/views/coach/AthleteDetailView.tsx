@@ -39,7 +39,9 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
     setRole,
     setActiveNav,
     role,
-    groups
+    groups,
+    documentRequests,
+    requestDocumentUpdate
   } = useApp();
 
   const athlete = athletes.find(a => a && a.id === selectedAthleteId) || athletes[0];
@@ -297,6 +299,14 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
                                 Истёк
                               </span>
                             )}
+                            {/* Document Update Request Sent to Parent Badge */}
+                            {(documentRequests || []).some(
+                              r => r && r.athleteId === athlete?.id && r.docType === doc.type && r.status === 'pending'
+                            ) && (
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                <Send className="w-3 h-3 text-blue-600" /> Запрос отправлен родителю
+                              </span>
+                            )}
                           </div>
 
                           <div className="text-xs text-slate-500 mt-1 flex items-center gap-3 flex-wrap">
@@ -316,7 +326,27 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-center">
+                      <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
+                        {role === 'coach' && (
+                          <button
+                            onClick={() => {
+                              if (!athlete) return;
+                              requestDocumentUpdate(athlete.id, doc.type, undefined, doc.title);
+                              showNotification(`Уведомление родителю (${athlete.parentName}) отправлено: «Требуется обновить ${doc.title}».`);
+                            }}
+                            title="Отправить родителю уведомление о необходимости обновить документ"
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold shadow-2xs transition flex items-center gap-1.5"
+                          >
+                            <Send className="w-3.5 h-3.5 text-amber-700" />
+                            <span>
+                              {(documentRequests || []).some(
+                                r => r && r.athleteId === athlete?.id && r.docType === doc.type && r.status === 'pending'
+                              )
+                                ? 'Напомнить родителю'
+                                : 'Запросить у родителя'}
+                            </span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setPreviewDoc(doc)}
                           className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
@@ -597,26 +627,53 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Button-card «Запросить обновление полиса» */}
-            <div
-              onClick={() => {
-                const insDoc = athleteDocs.find(d => d.type === 'insurance');
-                const expText = insDoc?.expiryDate ? ` (действует до ${insDoc.expiryDate})` : '';
-                showNotification(`Уведомление родителю (${athlete.parentName}) отправлено: «Требуется обновить страховой полис${expText}».`);
-              }}
-              className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition cursor-pointer group flex items-start gap-3"
-            >
-              <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-                <Send className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-900 group-hover:text-red-700">
-                  Запросить обновление полиса
+            {(() => {
+              const pendingInsRequest = (documentRequests || []).find(
+                r => r && r.athleteId === athlete?.id && r.docType === 'insurance' && r.status === 'pending'
+              );
+              return (
+                <div
+                  onClick={() => {
+                    if (!athlete) return;
+                    const insDoc = athleteDocs.find(d => d.type === 'insurance');
+                    const expText = insDoc?.expiryDate ? ` (действует до ${insDoc.expiryDate})` : '';
+                    requestDocumentUpdate(
+                      athlete.id,
+                      'insurance',
+                      `Срок действия страхового полиса${expText ? ` истекает ${insDoc?.expiryDate}` : ''}. Пожалуйста, предоставьте новый полис для сохранения спортивного допуска к тренировкам и соревнованиям.`,
+                      'Страховой полис от несчастных случаев'
+                    );
+                    showNotification(`Уведомление родителю (${athlete.parentName}) отправлено: «Требуется обновить страховой полис${expText}».`);
+                  }}
+                  className={`p-3.5 rounded-xl border transition cursor-pointer group flex items-start gap-3 ${
+                    pendingInsRequest
+                      ? 'border-amber-300 bg-amber-50 hover:bg-amber-100/70'
+                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    pendingInsRequest ? 'bg-amber-200 text-amber-800' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    <Send className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 group-hover:text-red-700 flex items-center gap-1.5">
+                      <span>Запросить обновление полиса</span>
+                      {pendingInsRequest && (
+                        <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 border border-amber-300">
+                          Активно
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      {pendingInsRequest
+                        ? `Запрос направлен родителю (${pendingInsRequest.requestedAt}) • Отправить повторно`
+                        : 'Отправляет уведомление родителю'}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Отправляет уведомление родителю
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* Block «Решение об участии» */}
