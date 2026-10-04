@@ -142,31 +142,33 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
-      {/* Dev Switcher Bar */}
-      <DevHeader />
+      {/* Top Header Section (Dev Switcher + Mobile Bar in unified sticky container) */}
+      <div className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 shadow-md">
+        <DevHeader />
 
-      {/* Mobile Top App Bar (shown only on small screens) */}
-      <div className="md:hidden bg-slate-900 border-b border-slate-800 text-white px-4 py-2.5 flex items-center justify-between shadow-sm sticky top-[45px] z-30">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
-            aria-label="Открыть меню"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-red-600 text-white font-bold text-xs flex items-center justify-center">
-              ★
-            </span>
-            <span className="font-extrabold text-sm tracking-wide text-white">САМБО PRO</span>
+        {/* Mobile Top App Bar (shown only on small screens) */}
+        <div className="md:hidden bg-slate-900 border-t border-slate-800/80 text-white px-3.5 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 transition min-w-[38px] min-h-[38px] flex items-center justify-center touch-manipulation"
+              aria-label="Открыть меню"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                ★
+              </span>
+              <span className="font-extrabold text-sm tracking-wide text-white">САМБО PRO</span>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30">
-            {roleTitles[role] || role}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30">
+              {roleTitles[role] || role}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -175,16 +177,16 @@ export const App: React.FC = () => {
         {/* Sidebar (drawer on mobile, fixed on desktop) */}
         <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 
-        {/* Workspace Area with bottom padding for mobile bar */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-20 md:pb-8">
+        {/* Workspace Area with safe bottom padding for mobile navigation bar */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-24 md:pb-8">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Thumb friendly for phones) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 text-slate-400 flex items-center justify-around py-1.5 px-2 z-30 no-print">
+      {/* Mobile Bottom Navigation Bar (Thumb friendly for phones with safe-area support) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 text-slate-400 flex items-center justify-around py-1 px-1.5 z-30 no-print pb-safe">
         {bottomNavItems.map(item => {
           const Icon = item.icon;
           const isActive = activeNav === item.id;
@@ -192,19 +194,19 @@ export const App: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setActiveNav(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-medium transition-colors touch-manipulation ${
-                isActive ? 'text-red-500 font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-all touch-manipulation min-h-[48px] active:scale-95 ${
+                isActive ? 'text-red-500 font-bold bg-slate-800/70' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className="relative">
                 <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-red-500' : 'text-slate-400'}`} />
                 {(item as any).badge !== undefined && (item as any).badge > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1 text-[9px] font-black rounded-full bg-amber-400 text-slate-950">
+                  <span className="absolute -top-1.5 -right-2.5 px-1 min-w-[15px] text-[9px] font-black rounded-full bg-amber-400 text-slate-950 text-center">
                     {(item as any).badge}
                   </span>
                 )}
               </div>
-              <span>{item.label}</span>
+              <span className="truncate max-w-[64px]">{item.label}</span>
             </button>
           );
         })}
@@ -212,7 +214,7 @@ export const App: React.FC = () => {
         {/* More Button to open Drawer */}
         <button
           onClick={() => setMobileOpen(true)}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-medium text-slate-400 hover:text-slate-200 transition touch-manipulation"
+          className="flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl text-[10px] font-semibold text-slate-400 hover:text-slate-200 active:scale-95 transition-all touch-manipulation min-h-[48px]"
         >
           <MoreHorizontal className="w-4 h-4 mb-0.5" />
           <span>Ещё</span>

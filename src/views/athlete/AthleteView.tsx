@@ -146,13 +146,13 @@ export const AthleteView: React.FC = () => {
       </div>
 
       {/* Sub Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar -mx-1 sm:mx-0">
         <button
           onClick={() => setActiveNav('athlete_main')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 touch-manipulation min-h-[40px] ${
             navTab === 'athlete_main'
               ? 'bg-red-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
           }`}
         >
           <UserCheck className="w-4 h-4" />
@@ -161,10 +161,10 @@ export const AthleteView: React.FC = () => {
 
         <button
           onClick={() => setActiveNav('athlete_sessions')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 touch-manipulation min-h-[40px] ${
             navTab === 'athlete_sessions'
               ? 'bg-red-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
           }`}
         >
           <Dumbbell className="w-4 h-4" />
@@ -173,10 +173,10 @@ export const AthleteView: React.FC = () => {
 
         <button
           onClick={() => setActiveNav('athlete_tasks')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 touch-manipulation min-h-[40px] ${
             navTab === 'athlete_tasks'
               ? 'bg-red-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
           }`}
         >
           <Award className="w-4 h-4" />
@@ -185,10 +185,10 @@ export const AthleteView: React.FC = () => {
 
         <button
           onClick={() => setActiveNav('athlete_competitions')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 touch-manipulation min-h-[40px] ${
             navTab === 'athlete_competitions'
               ? 'bg-red-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100'
+              : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
           }`}
         >
           <Trophy className="w-4 h-4" />

@@ -184,7 +184,8 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
           {/* Close button on mobile */}
           <button
             onClick={onCloseMobile}
-            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white active:bg-slate-700 hover:bg-slate-800 transition min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
+            aria-label="Закрыть меню"
           >
             <X className="w-5 h-5" />
           </button>
@@ -239,7 +240,7 @@ export const Sidebar: React.FC<Props> = ({ mobileOpen, onCloseMobile }) => {
         </nav>
 
         {/* Footer Info */}
-        <div className="p-4 border-t border-slate-800/80 text-xs text-slate-400">
+        <div className="p-4 border-t border-slate-800/80 text-xs text-slate-400 pb-safe">
           <div className="flex items-center justify-between">
             <span>Версия</span>
             <span className="text-slate-300 font-mono">1.0.0</span>

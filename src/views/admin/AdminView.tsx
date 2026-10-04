@@ -179,7 +179,7 @@ export const AdminView: React.FC = () => {
 
         <button
           onClick={() => setEditingGroupId(selectedGroupId || groups[0]?.id || 'grp-1')}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+          className="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition flex items-center justify-center gap-1.5 min-h-[42px] touch-manipulation"
         >
           <Edit className="w-4 h-4" />
           <span>Настроить группу</span>

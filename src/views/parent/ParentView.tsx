@@ -168,13 +168,13 @@ export const ParentView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            <div className="flex items-center gap-2 w-full sm:w-auto sm:self-center shrink-0">
               <button
                 onClick={() => {
                   setUploadDocType(childPendingRequests[0].docType);
                   setIsUploadModalOpen(true);
                 }}
-                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-md shadow-red-900/20 transition flex items-center gap-2"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-black text-xs shadow-md shadow-red-900/20 transition flex items-center justify-center gap-2 min-h-[42px] touch-manipulation"
               >
                 <Upload className="w-4 h-4" />
                 <span>Загрузить обновлённый документ</span>

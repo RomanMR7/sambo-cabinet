@@ -6,8 +6,18 @@
   body {
     @apply bg-slate-50 text-slate-900 font-sans;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
+
+/* Safe area padding utilities for mobile devices with notches / home bars */
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {

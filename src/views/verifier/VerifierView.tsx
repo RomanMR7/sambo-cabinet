@@ -386,10 +386,10 @@ export const VerifierView: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={handleRemarks}
-                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 touch-manipulation"
+                    className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 touch-manipulation min-h-[42px]"
                   >
                     <AlertTriangle className="w-4 h-4" />
                     <span>{selectedDoc.verificationStatus === 'has_remarks' ? 'Обновить замечание' : 'Требуется уточнение'}</span>
@@ -397,7 +397,7 @@ export const VerifierView: React.FC = () => {
 
                   <button
                     onClick={handleVerify}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-900/20 transition flex items-center justify-center gap-1.5 touch-manipulation"
+                    className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-sm shadow-emerald-900/20 transition flex items-center justify-center gap-1.5 touch-manipulation min-h-[42px]"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>{selectedDoc.verificationStatus === 'verified' ? 'Подтверждено повторно' : 'Подтвердить проверку'}</span>

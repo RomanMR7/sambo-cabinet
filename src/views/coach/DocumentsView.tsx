@@ -85,7 +85,7 @@ export const DocumentsView: React.FC = () => {
 
         <button
           onClick={() => setUploadAthleteId(selectedAthleteId || athletes[0]?.id || 'ath-1')}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+          className="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition flex items-center justify-center gap-1.5 min-h-[42px] touch-manipulation"
         >
           <Plus className="w-4 h-4" />
           <span>+ Добавить документ</span>

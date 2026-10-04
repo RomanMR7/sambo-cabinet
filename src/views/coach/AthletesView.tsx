@@ -99,10 +99,10 @@ export const AthletesView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsEditGroupOpen(true)}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+            className="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-white rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 min-h-[42px] touch-manipulation"
           >
             <Settings className="w-4 h-4 text-slate-300" />
             <span>Настроить группу</span>
@@ -110,7 +110,7 @@ export const AthletesView: React.FC = () => {
 
           <button
             onClick={() => setIsAddAthleteOpen(true)}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition flex items-center gap-1.5"
+            className="px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition flex items-center justify-center gap-1.5 min-h-[42px] touch-manipulation"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ Добавить спортсмена</span>

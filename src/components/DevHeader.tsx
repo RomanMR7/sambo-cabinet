@@ -18,7 +18,7 @@ export const DevHeader: React.FC = () => {
   const coaches = (Array.isArray(clubUsers) ? clubUsers : []).filter(u => u && u.role === 'coach');
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white px-2.5 sm:px-4 py-2 flex items-center justify-between gap-2 shadow-md no-print z-50 sticky top-0">
+    <header className="bg-slate-900 border-b border-slate-800/80 text-white px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2 no-print">
       {/* Role Switcher & Coach Switcher */}
       <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
         <div className="hidden sm:flex items-center gap-1 text-[11px] text-slate-400 font-semibold uppercase tracking-wider pr-1.5 border-r border-slate-700 shrink-0">

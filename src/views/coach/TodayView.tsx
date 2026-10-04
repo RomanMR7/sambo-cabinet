@@ -295,20 +295,20 @@ export const TodayView: React.FC = () => {
         </div>
 
         {/* Interactive Day Switcher: [← Вчера] [Дата (Сегодня)] [Завтра →] */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-1.5 bg-white p-1 sm:p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
             <button
               onClick={handlePrevDay}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1"
+              className="flex-1 sm:flex-none justify-center px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1 touch-manipulation min-h-[40px] sm:min-h-0"
               title="Переключить на вчерашний день"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
               <span>Вчера</span>
             </button>
 
             <button
               onClick={handleToday}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`flex-2 sm:flex-none justify-center px-3 sm:px-3.5 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 touch-manipulation min-h-[40px] sm:min-h-0 ${
                 isSelectedToday
                   ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
@@ -327,11 +327,11 @@ export const TodayView: React.FC = () => {
 
             <button
               onClick={handleNextDay}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1"
+              className="flex-1 sm:flex-none justify-center px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1 touch-manipulation min-h-[40px] sm:min-h-0"
               title="Переключить на завтрашний день"
             >
               <span>Завтра</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3.5 h-3.5 shrink-0" />
             </button>
           </div>
 
@@ -346,10 +346,10 @@ export const TodayView: React.FC = () => {
                   handleOpenSession(upcomingSession.id);
                 }
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition shrink-0"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-bold text-xs shadow-sm shadow-red-900/20 transition min-h-[42px] touch-manipulation"
             >
-              <Dumbbell className="w-4 h-4" />
-              <span>
+              <Dumbbell className="w-4 h-4 shrink-0" />
+              <span className="truncate">
                 {sessionForSelectedDate
                   ? `Начать тренировку (${sessionForSelectedDate.timeRange.split(/[\–\-—]/)[0]?.trim() || '18:00'})`
                   : pendingSlotsOnDate[0]

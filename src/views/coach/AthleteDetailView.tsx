@@ -175,24 +175,24 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsEditAthleteOpen(true)}
-            className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 transition min-h-[42px] touch-manipulation flex items-center justify-center"
           >
             Редактировать
           </button>
           <button
             onClick={() => setIsObservationOpen(true)}
-            className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-sm transition flex items-center gap-1.5"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white shadow-sm transition flex items-center justify-center gap-1.5 min-h-[42px] touch-manipulation"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 shrink-0" />
             <span>Наблюдение</span>
           </button>
           <button
             onClick={() => setIsEditAthleteOpen(true)}
             title="Редактировать профиль"
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 min-h-[42px] min-w-[42px] flex items-center justify-center touch-manipulation"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
@@ -204,15 +204,15 @@ export const AthleteDetailView: React.FC<Props> = ({ onBack }) => {
         {/* Left 2 Cols: Tabs & Content */}
         <div className="lg:col-span-2 space-y-4">
           {/* Horizontal Tabs */}
-          <div className="bg-white rounded-xl border border-slate-200 p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 p-1 sm:p-1.5 flex items-center gap-1 overflow-x-auto no-scrollbar shadow-sm -mx-1 sm:mx-0">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+                className={`px-3 sm:px-3.5 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap touch-manipulation min-h-[38px] ${
                   activeTab === tab.id
                     ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200'
                 }`}
               >
                 {tab.label}
