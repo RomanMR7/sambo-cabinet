@@ -8,26 +8,27 @@
   <style>
     @media print {
       .no-print { display: none !important; }
-      body { background: white !important; color: #1e293b !important; }
+      body { background: white !important; color: #0f172a !important; }
       .page-break { page-break-before: always; }
-      .print-shadow-none { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+      .print-border { border: 1px solid #cbd5e1 !important; box-shadow: none !important; }
+      img { max-width: 100% !important; border: 1px solid #cbd5e1 !important; }
       a { text-decoration: none !important; color: inherit !important; }
     }
     html { scroll-behavior: smooth; }
     .badge { display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-red-600 selection:text-white">
+<body class="bg-[#0b1120] text-slate-100 font-sans antialiased min-h-screen selection:bg-red-600 selection:text-white">
 
   <!-- Floating Sticky Nav (no-print) -->
-  <nav class="no-print sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3 flex items-center justify-between">
+  <nav class="no-print sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3 flex items-center justify-between shadow-lg">
     <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-red-800 text-white font-black flex items-center justify-center text-sm shadow">
+      <div class="w-8 h-8 rounded-lg bg-red-600 text-white font-bold flex items-center justify-center text-sm shadow">
         ★
       </div>
       <div>
         <span class="font-extrabold text-white text-sm sm:text-base">САМБО PRO</span>
-        <span class="text-xs text-slate-400 ml-2 hidden sm:inline">| Практическое учебное пособие v1.0</span>
+        <span class="text-xs text-slate-400 ml-2 hidden sm:inline">| Официальное учебное пособие по системе</span>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -38,7 +39,7 @@
         📊 Презентация
       </a>
       <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition">
-        🚀 В кабинет
+        🚀 Открыть программу
       </a>
     </div>
   </nav>
@@ -48,7 +49,7 @@
     <!-- Header Cover Page -->
     <header class="border-b border-slate-800 pb-12 mb-12">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold tracking-wider uppercase mb-4">
-        Официальный регламент и методика внедрения
+        Официальный регламент работы • 100% соответствие интерфейсу программы
       </div>
       <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight mb-4">
         УЧЕБНОЕ ПОСОБИЕ<br>
@@ -57,25 +58,25 @@
         </span>
       </h1>
       <p class="text-lg text-slate-300 max-w-3xl leading-relaxed mb-6">
-        Пошаговое руководство пользователя с иллюстрациями экрана, регламентами взаимодействия и чек-листами для тренеров, родителей, спортсменов и администрации спортивного клуба.
+        Подробная пошаговая инструкция с аутентичными скриншотами экранов программы. Руководство охватывает ведение отчетов по «Правилу 4 недель», ежедневную работу тренера, отправку запросов родителям и двухконтурную верификацию документов.
       </p>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
         <div>
-          <span class="block text-xs text-slate-400">Статус</span>
-          <span class="font-bold text-emerald-400 text-sm">✓ Внедрение в работу</span>
+          <span class="block text-xs text-slate-400">Интерфейс</span>
+          <span class="font-bold text-emerald-400 text-sm">✓ Автономный SPA</span>
         </div>
         <div>
-          <span class="block text-xs text-slate-400">Версия регламента</span>
-          <span class="font-bold text-white text-sm">v1.0 (PRO Release)</span>
+          <span class="block text-xs text-slate-400">Математическая модель</span>
+          <span class="font-bold text-white text-sm">«Правило 4 недель»</span>
         </div>
         <div>
-          <span class="block text-xs text-slate-400">Охват ролей</span>
-          <span class="font-bold text-white text-sm">5 контуров доступа</span>
+          <span class="block text-xs text-slate-400">Контур безопасности</span>
+          <span class="font-bold text-white text-sm">Двухконтурный</span>
         </div>
         <div>
-          <span class="block text-xs text-slate-400">Норма времени на отметку</span>
-          <span class="font-bold text-amber-400 text-sm">15 сек на группу</span>
+          <span class="block text-xs text-slate-400">Взаимодействие</span>
+          <span class="font-bold text-amber-400 text-sm">Тренер ⇆ Родитель в 1 клик</span>
         </div>
       </div>
     </header>
@@ -83,435 +84,299 @@
     <!-- Navigation Quick Links -->
     <div class="no-print bg-slate-900/60 border border-slate-800 rounded-2xl p-6 mb-12">
       <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-        <span>📑 Оглавление и быстрый переход</span>
+        <span>📑 Оглавление учебного пособия</span>
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-        <a href="#section-roles" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
-          <span class="text-red-400 font-bold">1.</span> Архитектура и 5 ролей
+        <a href="#section-topbar" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
+          <span class="text-red-400 font-bold">1.</span> Верхняя панель и роли
         </a>
-        <a href="#section-coach" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
-          <span class="text-red-400 font-bold">2.</span> Модуль ТРЕНЕРА
+        <a href="#section-reports" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
+          <span class="text-red-400 font-bold">2.</span> Отчёты: «Правило 4 недель»
+        </a>
+        <a href="#section-coach-today" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
+          <span class="text-red-400 font-bold">3.</span> Экран тренера «Сегодня»
+        </a>
+        <a href="#section-athletes" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
+          <span class="text-red-400 font-bold">4.</span> Спортсмены и запросы родителю
         </a>
         <a href="#section-parent" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
-          <span class="text-red-400 font-bold">3.</span> Модуль РОДИТЕЛЯ
+          <span class="text-red-400 font-bold">5.</span> Кабинет РОДИТЕЛЯ и загрузка
         </a>
         <a href="#section-verifier" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
-          <span class="text-red-400 font-bold">4.</span> Модуль ВЕРИФИКАТОРА
-        </a>
-        <a href="#section-analytics" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
-          <span class="text-red-400 font-bold">5.</span> Матрица посещаемости
-        </a>
-        <a href="#section-faq" class="p-3 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2">
-          <span class="text-red-400 font-bold">6.</span> FAQ и Чек-листы
+          <span class="text-red-400 font-bold">6.</span> Очередь верификации и допуск
         </a>
       </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- SECTION 1: РОЛИ И ДОСТУПЫ                 -->
+    <!-- SECTION 1: ВЕРХНЯЯ ПАНЕЛЬ И РОЛИ           -->
     <!-- ========================================== -->
-    <section id="section-roles" class="mb-16 scroll-mt-20">
+    <section id="section-topbar" class="mb-16 scroll-mt-20">
       <div class="flex items-center gap-3 mb-6">
         <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-red-600 text-white">РАЗДЕЛ 1</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Архитектура ролей и контуры доступа</h2>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Верхняя панель: Переключение ролей и тренеров</h2>
       </div>
       <p class="text-slate-300 leading-relaxed mb-6">
-        Система разделяет права и интерфейсы между 5 ключевыми участниками процесса. Каждый пользователь видит только то, что необходимо для его задач, без лишнего информационного шума.
+        В самой верхней полосе экрана расположен сквозной переключатель ролей (DevHeader). Он позволяет мгновенно оценить, как выглядит система для каждого участника клуба:
       </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">🥋</span>
-            <h3 class="font-bold text-white text-base">Тренер</h3>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">
-            Отметка явок на ковре в 1 клик, светофор медицинского допуска, запрос обновления документов родителю, анализ динамики группы.
-          </p>
-          <div class="text-[11px] font-mono text-red-400 bg-red-950/40 border border-red-900/40 rounded-lg p-2">
-            Ключевая задача: Допуск к ковру и учет тренировок
-          </div>
+      <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 mb-6">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Кнопки ролей:</span>
+          <span class="badge bg-red-600 text-white font-bold">🥋 Тренер</span>
+          <span class="badge bg-slate-800 text-slate-300">🏅 Спортсмен</span>
+          <span class="badge bg-slate-800 text-slate-300">👨‍👩‍👦 Родитель</span>
+          <span class="badge bg-slate-800 text-slate-300">🛡️ Админ</span>
+          <span class="badge bg-slate-800 text-slate-300">👁️ Проверяющий</span>
+          <span class="ml-auto text-xs text-emerald-400 font-mono">● Автономный SPA</span>
+          <span class="badge bg-slate-800 text-slate-300">↺ Сброс</span>
         </div>
-
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">👨‍👩‍👦</span>
-            <h3 class="font-bold text-white text-base">Родитель</h3>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">
-            Контроль посещений ребенка, срочные уведомления от тренера, загрузка полисов и справок с камеры телефона, статус проверки.
-          </p>
-          <div class="text-[11px] font-mono text-blue-400 bg-blue-950/40 border border-blue-900/40 rounded-lg p-2">
-            Ключевая задача: Своевременное обновление документов
-          </div>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">🛡️</span>
-            <h3 class="font-bold text-white text-base">Верификатор / Врач</h3>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">
-            Второй контур проверки: экспертиза загруженных справок и полисов, сопоставление дат, допуск или отклонение с комментарием.
-          </p>
-          <div class="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-900/40 rounded-lg p-2">
-            Ключевая задача: Юридическая и медицинская чистота
-          </div>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">🏅</span>
-            <h3 class="font-bold text-white text-base">Спортсмен</h3>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">
-            Цифровой паспорт борца, динамика разрядов, весовая категория, статистика тренировок и соревнований.
-          </p>
-          <div class="text-[11px] font-mono text-amber-400 bg-amber-950/40 border border-amber-900/40 rounded-lg p-2">
-            Ключевая задача: Мотивация и спортивный рост
-          </div>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 md:col-span-2 lg:col-span-2">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-2xl">🏢</span>
-            <h3 class="font-bold text-white text-base">Администратор клуба</h3>
-          </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">
-            Сводный контроль по всем тренерам и группам, экспорт ведомостей для спорткомитетов и министерства, аудит оплат и страховок перед турнирами.
-          </p>
-          <div class="text-[11px] font-mono text-purple-400 bg-purple-950/40 border border-purple-900/40 rounded-lg p-2">
-            Ключевая задача: Управленческая отчетность и отсутствие штрафов
-          </div>
-        </div>
+        <ul class="text-xs text-slate-300 space-y-2">
+          <li><strong>Селектор «Тренер»</strong> (выпадающий список): Позволяет переключаться между тренерами школы (например, <em>Иванов А. В.</em>, <em>Петров С. Н.</em>) — расписание, группы и журнал мгновенно перестраиваются под выбранного наставника.</li>
+          <li><strong>Кнопка «Сброс»</strong>: Сбрасывает демо-данные к исходному состоянию (полезно при тренировке новых сотрудников).</li>
+        </ul>
       </div>
     </section>
 
     <!-- ========================================== -->
-    <!-- SECTION 2: МОДУЛЬ ТРЕНЕРА                 -->
+    <!-- SECTION 2: ОТЧЁТЫ И ПРАВИЛО 4 НЕДЕЛЬ       -->
     <!-- ========================================== -->
-    <section id="section-coach" class="mb-16 scroll-mt-20">
+    <section id="section-reports" class="mb-16 scroll-mt-20">
       <div class="flex items-center gap-3 mb-4">
         <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-red-600 text-white">РАЗДЕЛ 2</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Модуль тренера: Ежедневная работа</h2>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Аналитика и дисциплина: «Отчёты и Регулярность»</h2>
       </div>
 
       <p class="text-slate-300 leading-relaxed mb-6">
-        Главная цель модуля — освободить тренера от бумажного журнала и переписок в мессенджерах. Вся рутина укладывается в 15 секунд перед началом тренировки.
+        Этот экран является ключевым аналитическим центром тренера и руководства. Расчет регулярности строится на научно обоснованной модели «Правило 4 недель», исключающей штрафы за уважительные пропуски по болезни.
       </p>
 
-      <!-- SCREENSHOT 1 -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/90 overflow-hidden mb-8 shadow-xl">
-        <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+      <!-- REAL SCREENSHOT 2: REPORTS VIEW -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
           <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-            Скриншот 1. Главный экран тренера «Сегодня на ковре»
+            Скриншот 1. Экран «Отчёты и Регулярность» (Математическая модель «Правило 4 недель»)
           </span>
-          <span class="text-[11px] font-mono text-slate-500">Вид рабочего стола тренера</span>
+          <span class="text-[11px] font-mono text-slate-400">Раздел: Навигация → Отчёты</span>
         </div>
-        <img src="manual-assets/screen-1-coach-dashboard.jpg" alt="Интерфейс тренера Сегодня на ковре" class="w-full object-cover">
-        <div class="p-4 bg-slate-950/80 text-xs text-slate-400 border-t border-slate-800/80">
-          <strong>Элементы экрана:</strong> Вверху — сводка группы (всего, присутствуют, отсутствуют, на больничном); по центру — интерактивный список борцов со статусами допуска; справа — визуальная карта татами.
+        <img src="manual-assets/screen-2-coach-reports.png" alt="Экран Отчёты и Регулярность" class="w-full object-cover">
+        <div class="p-4 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+          <strong>Ключевые зоны экрана:</strong> Вверху кнопки «Экспорт в CSV» и «Печатная форма»; по центру блок математической формулы с 3 правилами; ниже фильтры по группам и периоду («Октябрь 2026», «Сентябрь 2026»); внизу подробная Таблица регулярности.
         </div>
       </div>
 
-      <!-- STEP-BY-STEP COACH -->
-      <div class="space-y-6">
-        <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-red-600/20 text-red-400 font-bold text-xs flex items-center justify-center border border-red-500/30">2.1</span>
-            Пошаговая отметка присутствия на ковре
-          </h3>
-          <ol class="space-y-3 text-sm text-slate-300 list-decimal list-inside">
-            <li>Откройте вкладку <strong>«Сегодня»</strong> в боковом меню.</li>
-            <li>В верхнем фильтре выберите нужную группу (например, <em>«Младшая группа 10-12 лет»</em>).</li>
-            <li>
-              Нажмите кнопку <strong>«Отметить всех присутствующими»</strong> (по умолчанию все получают статус <span class="badge bg-emerald-500/20 text-emerald-300">Присутствовал</span>).
-            </li>
-            <li>
-              Для отсутствующих борцов переключите селектор на <strong>«Пропуск»</strong> (красный крестик) или <strong>«Уважительная/Болезнь»</strong> (желтый щит).
-            </li>
-            <li>Система автоматически пересчитает процент явки и сохранит изменения в локальной базе.</li>
-          </ol>
-        </div>
+      <!-- RULES OF 4 WEEKS DETAILED -->
+      <div class="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4 text-sm text-slate-300">
+        <h3 class="text-lg font-bold text-white mb-2">Разбор формулы «Правило 4 недель»</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+            <strong class="text-white block mb-2 text-sm">1. Эффективная база (E)</strong>
+            <p class="font-mono text-amber-400 mb-2">E = Всего − Уважительные</p>
+            <p class="text-slate-400">Пропуски по болезни (справка) или по заявлению родителей полностью исключаются из знаменателя. Болеющий ребенок не теряет рейтинг!</p>
+          </div>
 
-        <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-red-600/20 text-red-400 font-bold text-xs flex items-center justify-center border border-red-500/30">2.2</span>
-            Светофор медицинского допуска спортсмена
-          </h3>
-          <p class="text-sm text-slate-300 mb-4">
-            Каждый борец в списке имеет цветной индикатор готовности к нагрузкам:
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
-            <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-900/50">
-              <span class="badge bg-emerald-500/20 text-emerald-300 mb-1">Зеленый допуск</span>
-              <p class="text-slate-300">Все документы в порядке (страховка и допуск диспансера активны). Борец готов к ковру и спаррингам.</p>
-            </div>
-            <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-900/50">
-              <span class="badge bg-amber-500/20 text-amber-300 mb-1">Желтое предупреждение</span>
-              <p class="text-slate-300">Срок действия страховки или справки истекает менее чем через 14 дней. Пора направить запрос родителю.</p>
-            </div>
-            <div class="p-3 rounded-xl bg-rose-950/40 border border-rose-900/50">
-              <span class="badge bg-rose-500/20 text-rose-300 mb-1">Красный: Допуск закрыт</span>
-              <p class="text-slate-300">Полис или справка просрочены, либо отсутствуют. Выход на ковер и соревновательный спарринг строго запрещен!</p>
-            </div>
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+            <strong class="text-white block mb-2 text-sm">2. Доля посещений (%)</strong>
+            <p class="font-mono text-emerald-400 mb-2">Доля = (Посещения / E) × 100%</p>
+            <p class="text-slate-400">Спортсмены с одинаковой долей делят одно призовое место. Показывает реальную спортивную дисциплину без искажений.</p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+            <strong class="text-white block mb-2 text-sm">3. Присвоение места</strong>
+            <p class="font-mono text-blue-400 mb-2">Условие: E ≥ 4 и нет «Не отмечено»</p>
+            <p class="text-slate-400">Если тренер не заполнил статус хотя бы для одного занятия (статус U), расчет призового места блокируется до момента отметки.</p>
           </div>
         </div>
 
-        <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-red-600/20 text-red-400 font-bold text-xs flex items-center justify-center border border-red-500/30">2.3</span>
-            Отправка родителю запроса на обновление документов в 1 клик
-          </h3>
-          <p class="text-sm text-slate-300 mb-3">
-            Больше не нужно звонить родителям или писать в общий чат WhatsApp:
-          </p>
-          <ul class="space-y-2 text-sm text-slate-300 list-disc list-inside">
-            <li>Кликните по имени борца с желтым или красным статусом, чтобы открыть его детальную карточку.</li>
-            <li>В блоке <strong>«Документы»</strong> нажмите кнопку <strong>«Запросить обновление полиса»</strong> (или выберите конкретный тип документа).</li>
-            <li>Статус в карточке тренера мгновенно меняется на <span class="badge bg-amber-500/20 text-amber-300">Запрос отправлен родителю</span>.</li>
-            <li>Родитель на своем смартфоне сразу увидит яркий красный алерт с инструкцией по загрузке.</li>
-          </ul>
+        <div class="mt-4 p-3 rounded-xl bg-blue-950/30 border border-blue-900/40 text-xs flex items-center justify-between">
+          <span>📄 <strong>Печатная форма:</strong> Нажмите красную кнопку «Печатная форма» в правом верхнем углу для вывода чистого протокола на принтер.</span>
         </div>
       </div>
     </section>
 
     <!-- ========================================== -->
-    <!-- SECTION 3: МОДУЛЬ РОДИТЕЛЯ                -->
+    <!-- SECTION 3: ЭКРАН ТРЕНЕРА «СЕГОДНЯ»        -->
+    <!-- ========================================== -->
+    <section id="section-coach-today" class="mb-16 scroll-mt-20">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-red-600 text-white">РАЗДЕЛ 3</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Модуль тренера: Экран «Сегодня» и начало занятия</h2>
+      </div>
+
+      <p class="text-slate-300 leading-relaxed mb-6">
+        При входе в программу тренер сразу видит оперативную картину текущего дня: сколько борцов в группе, во сколько начинается тренировка, сколько документов ожидают проверки и какие спортсмены требуют внимания.
+      </p>
+
+      <!-- REAL SCREENSHOT 1: TODAY VIEW -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+            Скриншот 2. Рабочий экран «Сегодня» (Иванов А. В., Группа 1 и Группа 3)
+          </span>
+          <span class="text-[11px] font-mono text-slate-400">Раздел: Навигация → Сегодня</span>
+        </div>
+        <img src="manual-assets/screen-1-coach-today.png" alt="Экран Сегодня" class="w-full object-cover">
+        <div class="p-4 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+          <strong>Элементы сводки:</strong> 4 верхние карточки (8 спортсменов, занятие 19:15, 2 задачи в работе, 2 документа на проверке). Красная кнопка «Начать занятие / Открыть журнал». Блоки «Требует внимания» (сигналы низкой посещаемости) и «Задачи спортсменов».
+        </div>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <h3 class="text-base font-bold text-white mb-3">Действия тренера перед началом ковра:</h3>
+        <ol class="space-y-2.5 text-xs text-slate-300 list-decimal list-inside">
+          <li><strong>Проверка карточки «Контроль»:</strong> Если есть бейдж <em>«Истекают: 1 • На проверке: 2»</em> — обратите внимание на этих ребят до начала схваток.</li>
+          <li><strong>Блок «Требует внимания»:</strong> Здесь подсвечиваются борцы с пропусками (например, Даша Н. или Матвей П.). Клик по строке открывает детализацию уважительной причины (например, справку о болезни Лизы А.).</li>
+          <li><strong>Запуск тренировки:</strong> Нажмите большую красную кнопку <strong>«Начать занятие / Открыть журнал»</strong> для фиксации явки и упражнений.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: СПОРТСМЕНЫ И ЗАПРОС РОДИТЕЛЮ    -->
+    <!-- ========================================== -->
+    <section id="section-athletes" class="mb-16 scroll-mt-20">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-red-600 text-white">РАЗДЕЛ 4</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Состав группы и отправка запроса родителю в 1 клик</h2>
+      </div>
+
+      <p class="text-slate-300 leading-relaxed mb-6">
+        В разделе <strong>«Спортсмены»</strong> отображается полный список группы с фильтрацией по медицинскому допуску: <em>«Допущены»</em>, <em>«Ожидают»</em>, <em>«Не допущены»</em>.
+      </p>
+
+      <!-- REAL SCREENSHOT 3: ATHLETES VIEW -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+            Скриншот 3. Состав группы 1 (Начальная подготовка) и фильтры допусков
+          </span>
+          <span class="text-[11px] font-mono text-slate-400">Раздел: Навигация → Спортсмены</span>
+        </div>
+        <img src="manual-assets/screen-3-coach-athletes.png" alt="Список спортсменов" class="w-full object-cover">
+      </div>
+
+      <!-- REAL SCREENSHOT 4: ATHLETE DETAIL -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+            Скриншот 4. Детальная карточка борца (Антон Кузнецов) — Вкладка «Документы»
+          </span>
+          <span class="text-[11px] font-mono text-slate-400">Карточка атлета → Документы</span>
+        </div>
+        <img src="manual-assets/screen-4-athlete-detail.png" alt="Карточка атлета и документы" class="w-full object-cover">
+        <div class="p-4 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+          <strong>Кнопка отправки запроса:</strong> В правом блоке кнопка <em>«Запросить обновление полиса»</em>, а также кнопки <em>«Запросить у родителя»</em> напротив каждого документа.
+        </div>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <h3 class="text-base font-bold text-white mb-2">Как отправить запрос родителю (Пошагово):</h3>
+        <p class="text-xs text-slate-300 mb-3">1. В списке спортсменов кликните <strong>«Открыть карточку →»</strong> у борца со статусом «Ожидает» (например, Антон К.).</p>
+        <p class="text-xs text-slate-300 mb-3">2. Перейдите на вкладку <strong>«Документы»</strong>.</p>
+        <p class="text-xs text-slate-300 mb-3">3. Нажмите кнопку <strong>«Запросить у родителя»</strong> напротив нужного документа или в блоке действий справа.</p>
+        <p class="text-xs text-emerald-400 font-bold">✓ Запрос мгновенно отправлен! У родителя на телефоне появляется уведомление.</p>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: КАБИНЕТ РОДИТЕЛЯ               -->
     <!-- ========================================== -->
     <section id="section-parent" class="mb-16 scroll-mt-20">
       <div class="flex items-center gap-3 mb-4">
-        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-blue-600 text-white">РАЗДЕЛ 3</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Модуль родителя: Реакция на запрос и загрузка</h2>
+        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-blue-600 text-white">РАЗДЕЛ 5</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Модуль РОДИТЕЛЯ: Уведомление и загрузка документа</h2>
       </div>
 
       <p class="text-slate-300 leading-relaxed mb-6">
-        Кабинет родителя адаптирован под мобильные телефоны. Главный приоритет — сделать загрузку документов настолько простой, чтобы родитель справился за 40 секунд стоя в очереди или дома.
+        Как только тренер нажимает кнопку запроса, родитель видит крупный янтарный баннер с указанием, какой именно документ требуется и почему это важно для допуска.
       </p>
 
-      <!-- SCREENSHOT 2 -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/90 overflow-hidden mb-8 shadow-xl">
-        <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+      <!-- REAL SCREENSHOT 5: PARENT VIEW -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
           <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-            Скриншот 2. Личный кабинет родителя с активным запросом от тренера
+            Скриншот 5. Кабинет родителя (Ольга Кузнецова) с активным уведомлением от тренера
           </span>
-          <span class="text-[11px] font-mono text-slate-500">Мобильный/веб вид</span>
+          <span class="text-[11px] font-mono text-slate-400">Роль: Родитель → Мой ребёнок</span>
         </div>
-        <img src="manual-assets/screen-2-parent-cabinet.jpg" alt="Интерфейс родителя с алертом" class="w-full object-cover">
-        <div class="p-4 bg-slate-950/80 text-xs text-slate-400 border-t border-slate-800/80">
-          <strong>Ключевой элемент:</strong> Срочный верхний баннер <em>«Тренер запросил обновление страховки»</em> с прямой кнопкой <em>«Обновить полис»</em>. Рядом — профиль ребенка и зона прикрепления фото/скана.
+        <img src="manual-assets/screen-5-parent-view.png" alt="Кабинет родителя с алертом" class="w-full object-cover">
+        <div class="p-4 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+          <strong>Алерт тренера:</strong> Янтарный блок <em>«УВЕДОМЛЕНИЕ ОТ ТРЕНЕРА: ТРЕБУЕТСЯ ОБНОВЛЕНИЕ ДОКУМЕНТА (Иванов А. В.)»</em>. Красная кнопка <em>«Загрузить обновлённый документ»</em> и индикаторы с цифрой «1» в меню.
         </div>
       </div>
 
-      <!-- STEP-BY-STEP PARENT -->
-      <div class="space-y-6">
-        <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <span class="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 font-bold text-xs flex items-center justify-center border border-blue-500/30">3.1</span>
-            Инструкция для родителя: Как обновить полис за 3 шага
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4">
-            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
-              <span class="font-black text-blue-400 text-lg block mb-1">ШАГ 1</span>
-              <strong class="text-white block mb-1">Нажмите «Обновить полис»</strong>
-              <p class="text-xs text-slate-400">Нажмите на синюю кнопку в срочном верхнем баннере или значок стрелки загрузки напротив просроченного документа.</p>
-            </div>
-            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
-              <span class="font-black text-blue-400 text-lg block mb-1">ШАГ 2</span>
-              <strong class="text-white block mb-1">Прикрепите фото или скан</strong>
-              <p class="text-xs text-slate-400">Сфотографируйте документ на камеру телефона (форматы JPG/PNG или PDF) и укажите новую дату окончания срока действия.</p>
-            </div>
-            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
-              <span class="font-black text-blue-400 text-lg block mb-1">ШАГ 3</span>
-              <strong class="text-white block mb-1">Отправьте на проверку</strong>
-              <p class="text-xs text-slate-400">Нажмите «Загрузить файл». Запрос тренера автоматически снимется, а документ перейдет в статус <em>«На проверке»</em>.</p>
-            </div>
-          </div>
+      <!-- REAL SCREENSHOT 5B: UPLOAD MODAL -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+            Скриншот 6. Модальное окно загрузки документа «Правило двухконтурного контроля»
+          </span>
+          <span class="text-[11px] font-mono text-slate-400">Окно: Загрузить документ</span>
         </div>
+        <img src="manual-assets/screen-5b-parent-modal.png" alt="Модальное окно загрузки документа" class="w-full object-cover">
+        <div class="p-4 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+          <strong>Поля формы:</strong> Переключатель типа («Медицинский», «Страховка», «Согласие»), название документа, срок действия (календарь), зона перетаскивания PDF/фото (до 15 МБ), кнопка <em>«Сохранить и передать на проверку»</em>.
+        </div>
+      </div>
 
-        <div class="p-6 rounded-2xl bg-amber-950/20 border border-amber-900/40">
-          <h4 class="text-sm font-bold text-amber-300 mb-2 flex items-center gap-2">
-            <span>⚠️ Важные требования к фотографиям документов:</span>
-          </h4>
-          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-            <li>Фотография должна быть четкой: текст, серия, номер полиса и печать страховой компании должны хорошо читаться.</li>
-            <li>Страховка должна содержать пункт: <strong>«Спортивные единоборства / Самбо»</strong> (стандартного бытового полиса недостаточно для участия в соревнованиях).</li>
-            <li>Срок действия полиса должен быть актуален минимум на 30 дней вперед.</li>
-          </ul>
-        </div>
+      <div class="p-6 rounded-2xl bg-blue-950/20 border border-blue-900/40 text-xs text-slate-300 space-y-2">
+        <strong class="text-white text-sm block mb-1">Пошаговая инструкция для родителя:</strong>
+        <p>1. Нажмите красную кнопку <strong>«Загрузить обновлённый документ»</strong> в баннере.</p>
+        <p>2. Тип документа (Медицинский или Страховка) уже выбран автоматически.</p>
+        <p>3. Выберите новую дату окончания действия документа.</p>
+        <p>4. Нажмите на область файла и выберите фото с камеры смартфона или PDF-файл.</p>
+        <p>5. Нажмите <strong>«Сохранить и передать на проверку»</strong>. Запрос тренера будет автоматически закрыт!</p>
       </div>
     </section>
 
     <!-- ========================================== -->
-    <!-- SECTION 4: МОДУЛЬ ВЕРИФИКАЦИИ              -->
+    <!-- SECTION 6: ОЧЕРЕДЬ ВЕРИФИКАЦИИ             -->
     <!-- ========================================== -->
     <section id="section-verifier" class="mb-16 scroll-mt-20">
       <div class="flex items-center gap-3 mb-4">
-        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-600 text-white">РАЗДЕЛ 4</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Модуль верификатора: Двухконтурная проверка</h2>
+        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-600 text-white">РАЗДЕЛ 6</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Модуль проверяющего: Двухконтурная экспертиза</h2>
       </div>
 
       <p class="text-slate-300 leading-relaxed mb-6">
-        Двухконтурная проверка гарантирует юридическую безопасность клуба. Тренер отвечает за спортивную работу, а верификатор (спортивный врач или секретарь) проверяет подлинность документов.
+        Служба верификации (спортивный врач или секретарь школы) получает загруженные родителями копии в защищенный контур модерации. Администратор клуба не видит медицинскую тайну — доступ открыт только аттестованному проверяющему.
       </p>
 
-      <!-- SCREENSHOT 3 -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/90 overflow-hidden mb-8 shadow-xl">
-        <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+      <!-- REAL SCREENSHOT 6: VERIFIER VIEW -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-8 shadow-2xl print-border">
+        <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
           <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-            Скриншот 3. Панель входящих документов на верификацию
+            Скриншот 7. Экран проверяющего (Смирнова В. А. • Служба верификации)
           </span>
-          <span class="text-[11px] font-mono text-slate-500">Контур безопасности и модерации</span>
+          <span class="text-[11px] font-mono text-slate-400">Роль: Проверяющий → Очередь проверки</span>
         </div>
-        <img src="manual-assets/screen-3-verifier-contour.jpg" alt="Интерфейс верификатора" class="w-full object-cover">
-        <div class="p-4 bg-slate-950/80 text-xs text-slate-400 border-t border-slate-800/80">
-          <strong>Инструменты верификатора:</strong> Предпросмотр скана, ФИО спортсмена, проверка номера и даты окончания, кнопки действия «✓ Одобрить» и «✕ Отклонить с причиной».
-        </div>
-      </div>
-
-      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4 text-sm text-slate-300">
-        <h3 class="text-lg font-bold text-white mb-2">Регламент действий верификатора</h3>
-        <p>1. Откройте вкладку <strong>«Верификация»</strong> и отфильтруйте список по вкладке <span class="badge bg-amber-500/20 text-amber-300">На проверке</span>.</p>
-        <p>2. Кликните по превью документа, чтобы открыть скан в полном размере. Проверьте:</p>
-        <ul class="list-disc list-inside pl-4 space-y-1 text-xs text-slate-400">
-          <li>Совпадение ФИО спортсмена с карточкой в базе клуба;</li>
-          <li>Наличие печати и подписи лицензированного медицинского учреждения или страховой компании;</li>
-          <li>Корректность указанной родителем даты окончания.</li>
-        </ul>
-        <p>3. Если все верно — нажмите <span class="badge bg-emerald-500/20 text-emerald-300">Одобрить</span>. Статус спортсмена у тренера сразу станет «Зеленый допуск».</p>
-        <p>4. Если документ не подходит — нажмите <span class="badge bg-rose-500/20 text-rose-300">Отклонить</span> и укажите причину (например: <em>«Смазана дата окончания»</em> или <em>«Нет отметки о допуске к самбо»</em>). Родитель получит уведомление с вашим комментарием.</p>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- SECTION 5: АНАЛИТИКА И МАТРИЦА ПОСЕЩАЕМОСТИ -->
-    <!-- ========================================== -->
-    <section id="section-analytics" class="mb-16 scroll-mt-20">
-      <div class="flex items-center gap-3 mb-4">
-        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-amber-600 text-white">РАЗДЕЛ 5</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Аналитика и 4-недельная матрица посещаемости</h2>
-      </div>
-
-      <p class="text-slate-300 leading-relaxed mb-6">
-        Система автоматически ведет историю каждого занятия и собирает матрицу динамики за последние 4 недели. Это позволяет моментально выявлять риск оттока спортсменов и контролировать дисциплину.
-      </p>
-
-      <!-- SCREENSHOT 4 -->
-      <div class="rounded-2xl border border-slate-800 bg-slate-900/90 overflow-hidden mb-8 shadow-xl">
-        <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-            Скриншот 4. 4-недельная матрица и аналитика посещаемости
-          </span>
-          <span class="text-[11px] font-mono text-slate-500">Журнал и экспорт</span>
-        </div>
-        <img src="manual-assets/screen-4-attendance-matrix.jpg" alt="Интерфейс матрицы посещаемости" class="w-full object-cover">
-        <div class="p-4 bg-slate-950/80 text-xs text-slate-400 border-t border-slate-800/80">
-          <strong>Аналитические индикаторы:</strong> Зеленый кружок — тренировка посещена; красный крестик — пропуск без уважительной причины; желтый крест — болезнь/справка. Прогресс-бар показывает процент участия за месяц.
+        <img src="manual-assets/screen-6-verifier-view.png" alt="Очередь проверки документов" class="w-full object-cover">
+        <div class="p-4 bg-slate-950 text-xs text-slate-400 border-t border-slate-800">
+          <strong>Рабочие области:</strong> Слева список документов «На проверке» (Антон К., Лиза А.); справа реквизиты, кнопка «Открыть копию», поле для служебного комментария, кнопки <em>«Требуется уточнение»</em> и <em>«Подтвердить проверку»</em>.
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <h4 class="font-bold text-white text-base mb-2">📊 Экспорт ведомостей в Excel</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            По кнопке <strong>«Экспорт в Excel»</strong> формируется официальная ведомость за любой календарный месяц с разбивкой по тренировочным дням, часам нагрузки и проценту посещаемости. Готово к подаче в спортшколу или федерацию.
-          </p>
-        </div>
-        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
-          <h4 class="font-bold text-white text-base mb-2">🚨 Предотвращение оттока (Early Churn Warning)</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Если спортсмен пропускает 3 тренировки подряд без уважительной причины, система подсвечивает его строку оранжевым маячком. Тренер успевает вовремя связаться с родителем и сохранить воспитанника в секции.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- SECTION 6: FAQ И ЧЕК-ЛИСТЫ                 -->
-    <!-- ========================================== -->
-    <section id="section-faq" class="mb-16 scroll-mt-20">
-      <div class="flex items-center gap-3 mb-6">
-        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-purple-600 text-white">РАЗДЕЛ 6</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Часто задаваемые вопросы (FAQ) и Чек-листы</h2>
-      </div>
-
-      <div class="space-y-4 mb-8">
-        <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800">
-          <h4 class="font-bold text-white text-sm mb-2">❓ Что делать, если родитель прикрепил неправильный файл?</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Верификатор или тренер нажимает «Отклонить», указывает причину (например, <em>«Прикреплен полис ОМС вместо спортивного»</em>). Родителю в кабинете снова появится алерт с просьбой повторно прикрепить верный документ, где прямо прописана причина отказа.
-          </p>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800">
-          <h4 class="font-bold text-white text-sm mb-2">❓ Как отметить, что спортсмен болеет, чтобы это не считалось прогулом?</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            В журнале тренера при отметке спортсмена выберите желтый значок с крестиком (статус «Болезнь/Уважительная»). В ведомости и 4-недельной матрице такой пропуск помечается желтым значком и не снижает спортивный рейтинг спортсмена.
-          </p>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800">
-          <h4 class="font-bold text-white text-sm mb-2">❓ Работает ли система без постоянного интернета в подвальном зале?</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Да. Текущая версия хранит все изменения локально в браузере планшета или смартфона. При восстановлении связи данные синхронизируются с сервером без потери отметок.
-          </p>
-        </div>
-      </div>
-
-      <!-- PRINTABLE CHECKLISTS -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 print-shadow-none">
-        <div class="p-6 rounded-2xl bg-slate-900 border border-red-500/30">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="text-xl">📋</span>
-            <h3 class="font-bold text-white text-base">Ежедневный чек-лист тренера</h3>
-          </div>
-          <ul class="text-xs text-slate-300 space-y-2.5">
-            <li class="flex items-start gap-2">
-              <span class="text-red-400 font-bold mt-0.5">☐</span>
-              <span><strong>За 5 минут до тренировки:</strong> Открыть экран «Сегодня» и проверить светофор допусков.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="text-red-400 font-bold mt-0.5">☐</span>
-              <span><strong>При выходе на ковер:</strong> Нажать «Отметить всех присутствующими», скорректировать отсутствующих.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="text-red-400 font-bold mt-0.5">☐</span>
-              <span><strong>После тренировки:</strong> Проверить желтые значки и в 1 клик отправить запросы родителям на продление полисов.</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="p-6 rounded-2xl bg-slate-900 border border-blue-500/30">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="text-xl">📱</span>
-            <h3 class="font-bold text-white text-base">Памятка для родителей (в чат)</h3>
-          </div>
-          <ul class="text-xs text-slate-300 space-y-2.5">
-            <li class="flex items-start gap-2">
-              <span class="text-blue-400 font-bold mt-0.5">1.</span>
-              <span>Сохраните ссылку на личный кабинет в закладки телефона или на главный экран.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="text-blue-400 font-bold mt-0.5">2.</span>
-              <span>При появлении красного баннера «Тренер запросил обновление страховки» — сделайте фото нового полиса и нажмите «Обновить полис».</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="text-blue-400 font-bold mt-0.5">3.</span>
-              <span>Дождитесь смены статуса на «Одобрено» — ребенок допущен к тренировкам и соревнованиям!</span>
-            </li>
-          </ul>
-        </div>
+      <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 space-y-2.5">
+        <strong class="text-white text-sm block mb-1">Регламент работы верификатора:</strong>
+        <p>1. Выберите документ из списка слева (версия v1, v2 и т.д.).</p>
+        <p>2. Нажмите <strong>«Открыть копию»</strong> и проверьте печать, подпись и срок.</p>
+        <p>3. Нажмите <strong>«Подтвердить проверку»</strong> (зеленая кнопка) — статус спортсмена у тренера мгновенно становится зеленым («Допущен»).</p>
+        <p>4. Если есть дефекты (смазан скан, нет даты) — введите комментарий в поле и нажмите <strong>«Требуется уточнение»</strong> (красная кнопка). Родитель сразу увидит замечание в своем кабинете.</p>
       </div>
     </section>
 
     <!-- Footer -->
     <footer class="border-t border-slate-800 pt-8 pb-16 text-center text-xs text-slate-500">
-      <p class="mb-2">Учебное пособие создано для спортивных клубов и секций Федерации Самбо.</p>
-      <p>© 2026 САМБО PRO. Все права защищены. Для печати используйте комбинацию клавиш <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">Ctrl + P</kbd>.</p>
+      <p class="mb-2">Учебное пособие разработано в рамках стандартов Федерации Самбо для цифровой платформы САМБО PRO.</p>
+      <p>© 2026 САМБО PRO. Все права защищены. Нажмите <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">Ctrl + P</kbd> для печати в PDF.</p>
     </footer>
 
   </div>
